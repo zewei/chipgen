@@ -1,0 +1,344 @@
+# Reset System Configuration
+# 复位网络定义 - 从Arch.yaml提取
+
+# Reset Controller Configuration
+reset_controller:
+  # 主复位控制器
+  main_reset_ctrl:
+    instance: instance.reset
+    port: main_reset_ctrl
+    
+  # 复位分配器
+  reset_distributor:
+    instance: instance.reset
+    port: distributor
+
+# Reset Sources (复位源)
+reset_sources:
+  # 电源复位
+  por_reset:
+    instance: instance.reset
+    port: por_rst_n
+    
+  # 外部引脚复位
+  nrst_pin:
+    instance: instance.reset
+    port: nrst_n
+    
+  # 欠压复位
+  bor_reset:
+    instance: instance.reset
+    port: bor_rst_n
+    
+  # 独立看门狗复位
+  iwdg_reset:
+    instance: instance.reset
+    port: iwdg_rst_n
+    
+  # 窗口看门狗复位
+  wwdg_reset:
+    instance: instance.reset
+    port: wwdg_rst_n
+    
+  # 软件复位
+  sw_reset:
+    instance: instance.reset
+    port: sw_rst_n
+    
+  # 时钟安全系统复位
+  css_reset:
+    instance: instance.reset
+    port: css_rst_n
+
+# Reset Networks (复位网络分配)
+net:
+  # CPU域复位
+  rst_mpu:
+    instance: instance.reset
+    port: cpu_rst_n
+    
+  rst_mcu:
+    instance: instance.reset
+    port: mcu_rst_n
+    
+  rst_m0:
+    instance: instance.reset
+    port: m0_rst_n
+    
+  # 系统基础设施复位
+  rst_sys:
+    instance: instance.reset
+    port: sys_rst_n
+    
+  # 内存域复位
+  rst_ddr:
+    instance: instance.reset
+    port: ddr_rst_n
+    
+  # 外设域复位
+  rst_periph:
+    instance: instance.reset
+    port: periph_rst_n
+    
+  # 高速外设复位
+  rst_gpu:
+    instance: instance.reset
+    port: gpu_rst_n
+    
+  rst_npu:
+    instance: instance.reset
+    port: npu_rst_n
+    
+  rst_vdec:
+    instance: instance.reset
+    port: vdec_rst_n
+    
+  rst_venc:
+    instance: instance.reset
+    port: venc_rst_n
+    
+  rst_eth:
+    instance: instance.reset
+    port: eth_rst_n
+    
+  rst_usb:
+    instance: instance.reset
+    port: usb_rst_n
+    
+  rst_pcie:
+    instance: instance.reset
+    port: pcie_rst_n
+    
+  rst_sdmmc1:
+    instance: instance.reset
+    port: sdmmc1_rst_n
+    
+  rst_sdmmc2:
+    instance: instance.reset
+    port: sdmmc2_rst_n
+    
+  rst_qspi:
+    instance: instance.reset
+    port: qspi_rst_n
+    
+  # 低速外设复位
+  rst_gpio:
+    instance: instance.reset
+    port: gpio_rst_n
+    
+  rst_adc:
+    instance: instance.reset
+    port: adc_rst_n
+    
+  rst_dac:
+    instance: instance.reset
+    port: dac_rst_n
+    
+  rst_timer:
+    instance: instance.reset
+    port: timer_rst_n
+    
+  rst_lptim1:
+    instance: instance.reset
+    port: lptim1_rst_n
+    
+  rst_lptim2:
+    instance: instance.reset
+    port: lptim2_rst_n
+    
+  rst_rtc:
+    instance: instance.reset
+    port: rtc_rst_n
+
+# Reset Buses (复位总线)
+bus:
+  # 复位控制总线
+  reset_control_bus:
+    - instance: instance.rcc
+      port: reset_cfg
+    - instance: instance.apb_interconnect
+      port: reset_slave
+      
+  # 复位状态监控总线
+  reset_status_bus:
+    - instance: instance.reset.main_reset_ctrl
+      port: status
+    - instance: instance.apb_interconnect
+      port: reset_status_slave
+
+# Reset Combination Logic (复位组合逻辑)
+comb:
+  # 复位同步逻辑
+  rst_sync:
+    bits: 1
+    expr: "rst_por || rst_bor || rst_pin || rst_iwdg || rst_wwdg"
+    
+  rst_peripheral:
+    bits: 1
+    expr: "rst_sys || rst_mpu || rst_mcu"
+    
+  # Reset Cause Detection
+  por_reset_active:
+    bits: 1
+    expr: "!por_rst_n"
+    
+  nrst_reset_active:
+    bits: 1
+    expr: "!nrst_n"
+    
+  bor_reset_active:
+    bits: 1
+    expr: "!bor_rst_n"
+    
+  iwdg_reset_active:
+    bits: 1
+    expr: "!iwdg_rst_n"
+    
+  wwdg_reset_active:
+    bits: 1
+    expr: "!wwdg_rst_n"
+    
+  sw_reset_active:
+    bits: 1
+    expr: "!sw_rst_n"
+    
+  css_reset_active:
+    bits: 1
+    expr: "!css_rst_n"
+    
+  # Reset Status Monitoring
+  reset_in_progress:
+    bits: 1
+    expr: "!cpu_rst_n || !mcu_rst_n || !m0_rst_n || !sys_rst_n"
+    
+  cpu_reset_active:
+    bits: 1
+    expr: "!cpu_rst_n"
+    
+  mcu_reset_active:
+    bits: 1
+    expr: "!mcu_rst_n"
+    
+  m0_reset_active:
+    bits: 1
+    expr: "!m0_rst_n"
+    
+  sys_reset_active:
+    bits: 1
+    expr: "!sys_rst_n"
+    
+  mem_reset_active:
+    bits: 1
+    expr: "!mem_rst_n"
+    
+  periph_reset_active:
+    bits: 1
+    expr: "!periph_rst_n"
+    
+  # Application Domain Reset Status
+  app_reset_active:
+    bits: 1
+    expr: "!app_cpu_rst_n || !app_periph_rst_n"
+    
+  app_cpu_reset_active:
+    bits: 1
+    expr: "!app_cpu_rst_n"
+    
+  app_periph_reset_active:
+    bits: 1
+    expr: "!app_periph_rst_n"
+    
+  # Debug Domain Reset Status
+  dbg_reset_active:
+    bits: 1
+    expr: "!dbg_cpu_rst_n || !dbg_mcu_rst_n"
+    
+  dbg_cpu_reset_active:
+    bits: 1
+    expr: "!dbg_cpu_rst_n"
+    
+  dbg_mcu_reset_active:
+    bits: 1
+    expr: "!dbg_mcu_rst_n"
+    
+  # System Reset Integration
+  system_reset_active:
+    bits: 1
+    expr: "error_to_reset || manual_reset_request"
+    
+  system_reset_complete:
+    bits: 1
+    expr: "system_reset_active && reset_sequence_done"
+    
+  manual_reset_request:
+    bits: 1
+    expr: "instance.syscfg.MANUAL_RESET_REQ"
+    
+  reset_sequence_done:
+    bits: 1
+    expr: "reset.main_reset_ctrl.reset_sequence_done"
+    
+  # Reset Reason Vector
+  reset_reason_vector:
+    bits: 8
+    expr: "{por_reset_active, nrst_reset_active, bor_reset_active, iwdg_reset_active, wwdg_reset_active, sw_reset_active, css_reset_active, reset_in_progress}"
+
+# Reset Validation Rules (复位验证规则)
+validation:
+  # Reset Controller Validation
+  reset_controller_rules:
+    - rule: reset_source_consistency
+      description: "复位源一致性检查"
+      target: reset_sources
+      condition: "por_reset && nrst_pin && bor_reset && iwdg_reset && wwdg_reset"
+      severity: error
+      message: "所有复位源必须正确配置"
+      
+    - rule: reset_network_connectivity
+      description: "复位网络连接性检查"
+      target: net
+      condition: "rst_mpu && rst_mcu && rst_sys && rst_periph"
+      severity: error
+      message: "核心复位网络必须连接"
+      
+    - rule: reset_status_monitoring
+      description: "复位状态监控完整性"
+      target: reset_reason_vector
+      condition: "width == 8"
+      severity: warning
+      message: "复位原因向量应为8位宽度"
+      
+    - rule: reset_sync_logic
+      description: "复位同步逻辑有效性"
+      target: rst_sync
+      condition: "defined(rst_sync) && defined(rst_peripheral)"
+      severity: error
+      message: "复位同步逻辑必须定义"
+      
+    - rule: reset_domain_separation
+      description: "复位域分离检查"
+      target: "[cpu_reset_active, mcu_reset_active, periph_reset_active]"
+      condition: "independent_signals"
+      severity: warning
+      message: "不同域的复位信号应该相互独立"
+      
+    - rule: reset_sequence_timing
+      description: "复位序列时序检查"
+      target: reset_sequence_done
+      condition: "synchronized_with_clock"
+      severity: error
+      message: "复位序列完成信号必须与时钟同步"
+      
+    - rule: reset_bus_connectivity
+      description: "复位总线连接性"
+      target: bus
+      condition: "reset_control_bus && reset_status_bus"
+      severity: error
+      message: "复位控制总线和状态总线必须配置"
+      
+    - rule: reset_reason_recording
+      description: "复位原因记录完整性"
+      target: reset_reason_vector
+      condition: "covers_all_sources"
+      severity: warning
+      message: "复位原因向量应覆盖所有复位源"

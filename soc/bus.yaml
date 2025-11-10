@@ -1,0 +1,278 @@
+# SOC总线系统定义
+# 从Arch.yaml中提取的所有bus定义
+
+# 内存系统总线
+bus:
+  # DDR AXI总线
+  ddr_axi:
+    - instance: axi_interconnect
+      port: ddr_master
+    - instance: ddr_ctrl
+      port: axi_slave
+  
+  # SRAM AHB总线
+  sram_ahb:
+    - instance: ahb_interconnect
+      port: sram_master
+    - instance: sram1
+      port: ahb_slave
+    - instance: sram2
+      port: ahb_slave
+    - instance: sram3
+      port: ahb_slave
+    - instance: sram4
+      port: ahb_slave
+    - instance: retsram
+      port: ahb_slave
+    - instance: flash_ctrl
+      port: ahb_slave
+
+  # 高速外设AXI总线
+  eth_axi:
+    - instance: axi_interconnect
+      port: eth_master
+    - instance: eth
+      port: axi_slave
+  
+  usb_axi:
+    - instance: axi_interconnect
+      port: usb_master
+    - instance: usb
+      port: axi_slave
+  
+  pcie_axi:
+    - instance: axi_interconnect
+      port: pcie_master
+    - instance: pcie
+      port: axi_slave
+
+  # 存储接口AHB总线
+  sdmmc_ahb:
+    - instance: ahb_interconnect
+      port: sdmmc_master
+    - instance: sdmmc1
+      port: ahb_slave
+    - instance: sdmmc2
+      port: ahb_slave
+
+  # 模拟外设APB总线
+  adc_apb:
+    - instance: apb_interconnect
+      port: adc_slave
+    - instance: adc1_cfg
+      port: cfg
+    - instance: adc2_cfg
+      port: cfg
+  
+  dac_apb:
+    - instance: apb_interconnect
+      port: dac_slave
+    - instance: dac_cfg
+      port: cfg
+
+  # 定时器APB总线
+  timer_apb:
+    - instance: apb_interconnect
+      port: timer_slave
+    - instance: tim1_cfg
+      port: cfg
+    - instance: tim2_cfg
+      port: cfg
+    - instance: tim3_cfg
+      port: cfg
+    - instance: tim4_cfg
+      port: cfg
+    - instance: tim5_cfg
+      port: cfg
+    - instance: tim6_cfg
+      port: cfg
+    - instance: tim7_cfg
+      port: cfg
+    - instance: tim8_cfg
+      port: cfg
+    - instance: tim9_cfg
+      port: cfg
+    - instance: tim10_cfg
+      port: cfg
+    - instance: tim11_cfg
+      port: cfg
+    - instance: tim12_cfg
+      port: cfg
+    - instance: tim13_cfg
+      port: cfg
+    - instance: tim14_cfg
+      port: cfg
+    - instance: tim15_cfg
+      port: cfg
+    - instance: tim16_cfg
+      port: cfg
+    - instance: tim17_cfg
+      port: cfg
+
+  # 低功耗定时器APB总线
+  lptim_apb:
+    - instance: apb_interconnect
+      port: lptim_slave
+    - instance: lptim1_cfg
+      port: cfg
+    - instance: lptim2_cfg
+      port: cfg
+
+  # 高分辨率定时器APB总线
+  hrtim_apb:
+    - instance: apb_interconnect
+      port: hrtim_slave
+    - instance: hrtim_cfg
+      port: cfg
+
+  # DMA APB总线
+  dma_apb:
+    - instance: apb_interconnect
+      port: dma_slave
+    - instance: dma1_cfg
+      port: cfg
+    - instance: dma2_cfg
+      port: cfg
+    - instance: bdma_cfg
+      port: cfg
+    - instance: mdma_cfg
+      port: cfg
+
+  # GPIO APB总线
+  gpio_apb:
+    - instance: apb_interconnect
+      port: gpio_slave
+    - instance: gpioa_cfg
+      port: cfg
+    - instance: gpiob_cfg
+      port: cfg
+    - instance: gpioc_cfg
+      port: cfg
+    - instance: gpiod_cfg
+      port: cfg
+    - instance: gpioe_cfg
+      port: cfg
+    - instance: gpiof_cfg
+      port: cfg
+    - instance: gpiog_cfg
+      port: cfg
+    - instance: gpioh_cfg
+      port: cfg
+
+  # 通信接口APB总线
+  i2c_apb:
+    - instance: apb_interconnect
+      port: i2c_slave
+    - instance: i2c1_cfg
+      port: cfg
+    - instance: i2c2_cfg
+      port: cfg
+    - instance: i2c3_cfg
+      port: cfg
+    - instance: i2c4_cfg
+      port: cfg
+    - instance: i2c5_cfg
+      port: cfg
+
+  spi_apb:
+    - instance: apb_interconnect
+      port: spi_slave
+    - instance: spi1_cfg
+      port: cfg
+    - instance: spi2_cfg
+      port: cfg
+    - instance: spi3_cfg
+      port: cfg
+    - instance: spi4_cfg
+      port: cfg
+    - instance: spi5_cfg
+      port: cfg
+
+  usart_apb:
+    - instance: apb_interconnect
+      port: usart_slave
+    - instance: usart1_cfg
+      port: cfg
+    - instance: usart2_cfg
+      port: cfg
+    - instance: usart3_cfg
+      port: cfg
+    - instance: uart4_cfg
+      port: cfg
+    - instance: uart5_cfg
+      port: cfg
+    - instance: usart6_cfg
+      port: cfg
+    - instance: uart7_cfg
+      port: cfg
+    - instance: uart8_cfg
+      port: cfg
+
+  # CAN APB总线
+  can_apb:
+    - instance: apb_interconnect
+      port: can_slave
+    - instance: can1_cfg
+      port: cfg
+    - instance: can2_cfg
+      port: cfg
+
+  # 系统配置APB总线
+  syscfg_apb:
+    - instance: syscfg
+      port: cfg
+    - instance: flash
+      port: cfg
+    - instance: pwr
+      port: cfg
+    - instance: apb_interconnect
+      port: slave_syscfg
+
+  # 调试APB总线
+  debug_apb:
+    - instance: dbgmcu
+      port: cfg
+    - instance: apb_interconnect
+      port: slave_debug
+
+  # 电源管理APB总线
+  pwr_apb:
+    - instance: pwr
+      port: cfg
+    - instance: apb_interconnect
+      port: pwr_slave
+
+  # 温度传感器APB总线
+  temp_apb:
+    - instance: temp
+      port: cfg
+    - instance: apb_interconnect
+      port: temp_slave
+
+  # 系统状态总线
+  system_status_bus:
+    - instance: syscfg
+      port: status
+    - instance: apb_interconnect
+      port: syscfg_slave
+
+  # 系统健康监控总线
+  health_monitor_bus:
+    - instance: health_monitor
+      port: cfg
+    - instance: apb_interconnect
+      port: health_slave
+
+  # 复位控制总线
+  reset_control_bus:
+    - instance: rcc
+      port: reset_cfg
+    - instance: apb_interconnect
+      port: reset_slave
+
+  # 复位状态监控总线
+  reset_status_bus:
+    - instance: main_reset_ctrl
+      port: status
+    - instance: apb_interconnect
+      port: reset_status_slave

@@ -1,0 +1,582 @@
+# Clock System Definitions
+# Extracted from Arch.yaml - Clock related configurations
+
+clock_network:
+  # Clock Domains
+  domains:
+    mpu_domain: "High-performance processor domain"
+    mcu_domain: "Microcontroller domain"
+    m0plus_domain: "Cortex-M0+ domain"
+    gpu_domain: "Graphics processing domain"
+    npu_domain: "AI accelerator domain"
+    video_domain: "Video processing domain"
+    peripheral_domain: "Peripheral domain"
+    always_on_domain: "Always-on domain"
+  
+  # Clock Routing Configuration
+  routing:
+    pll1_p: "Routes to MPU, GPU, high-speed peripherals"
+    pll1_q: "Routes to DDR, system bus"
+    pll1_r: "Routes to USB, Ethernet"
+    pll2_p: "Routes to NPU, AI processing"
+    pll2_q: "Routes to video processing"
+    pll2_r: "Routes to display interfaces"
+    pll3_p: "Routes to MCU, low-speed peripherals"
+    pll3_q: "Routes to communication peripherals"
+    pll3_r: "Routes to timer subsystem"
+    pll4_p: "Routes to audio, I2S"
+    pll4_q: "Routes to ADC, DAC"
+    pll4_r: "Routes to always-on domain"
+  
+  # Clock Gating Strategy
+  gating_strategy:
+    level1: "Domain-level gating (MPU, MCU, etc.)"
+    level2: "Peripheral-level gating (GPIO, timers, etc.)"
+    level3: "Functional unit gating (CPU cores, GPU shaders)"
+  
+  # Clock Security System
+  security:
+    monitors:
+      - "HSE oscillator monitoring"
+      - "LSE oscillator monitoring"
+      - "PLL output monitoring"
+    failure_response: "Automatic clock source switching, interrupt generation"
+  
+  # Power Management Integration
+  power_integration:
+    low_power_modes:
+      - "Sleep: Core stopped, peripherals running"
+      - "Stop: Most clocks stopped, retention maintained"
+      - "Standby: Only always-on domain active"
+      - "Shutdown: Complete power down"
+    wakeup_clocks: "Always-on domain maintains RTC, low-speed oscillators"
+
+clock:
+  # Clock Sources
+  clock_sources:
+    osc_hse:
+      type: "external_oscillator"
+      frequency: 25000000
+      accuracy: 50
+      startup_time: 2000
+      description: "High-speed external oscillator"
+    
+    osc_lse:
+      type: "external_oscillator"
+      frequency: 32768
+      accuracy: 20
+      startup_time: 1000
+      description: "Low-speed external oscillator"
+    
+    osc_hsi:
+      type: "internal_oscillator"
+      frequency: 16000000
+      accuracy: 1000
+      startup_time: 2
+      description: "High-speed internal oscillator"
+    
+    osc_lsi:
+      type: "internal_oscillator"
+      frequency: 32000
+      accuracy: 5000
+      startup_time: 1
+      description: "Low-speed internal oscillator"
+    
+    osc_csi:
+      type: "internal_oscillator"
+      frequency: 4000000
+      accuracy: 500
+      startup_time: 1
+      description: "Low-power internal oscillator"
+  
+  # PLL Controllers
+  pll_controllers:
+    pll1:
+      type: "fractional_pll"
+      input_source: "osc_hse"
+      vco_range: "192MHz-836MHz"
+      outputs:
+        p: "Main system clock"
+        q: "DDR interface clock"
+        r: "High-speed peripherals"
+    
+    pll2:
+      type: "fractional_pll"
+      input_source: "osc_hse"
+      vco_range: "192MHz-836MHz"
+      outputs:
+        p: "NPU processing clock"
+        q: "Video processing clock"
+        r: "Display interface clock"
+    
+    pll3:
+      type: "integer_pll"
+      input_source: "osc_hse"
+      vco_range: "192MHz-836MHz"
+      outputs:
+        p: "MCU core clock"
+        q: "Communication peripherals"
+        r: "Timer subsystem clock"
+    
+    pll4:
+      type: "audio_pll"
+      input_source: "osc_hse"
+      vco_range: "192MHz-836MHz"
+      outputs:
+        p: "Audio processing clock"
+        q: "ADC/DAC sampling clock"
+        r: "Always-on domain clock"
+  
+  # Clock Dividers
+  clock_dividers:
+    clk_divider:
+      type: "programmable_divider"
+      description: "Main system clock divider"
+      prescaler_range: "1-512"
+      applications:
+        - "CPU core frequency scaling"
+        - "Peripheral clock generation"
+        - "Power management"
+  
+  # Clock Gate Controllers
+  clock_gate_controllers:
+    clock_gate_mpu:
+      description: "MPU domain clock gating"
+      control_register: "RCC_MPCKSELR"
+      
+    clock_gate_mcu:
+      description: "MCU domain clock gating"
+      control_register: "RCC_MCCKSELR"
+      
+    clock_gate_gpu:
+      description: "GPU domain clock gating"
+      control_register: "RCC_GPUCKSELR"
+      
+    clock_gate_npu:
+      description: "NPU domain clock gating"
+      control_register: "RCC_NPUCKSELR"
+      
+    clock_gate_video:
+      description: "Video domain clock gating"
+      control_register: "RCC_VIDCKSELR"
+      
+    clock_gate_peripheral:
+      description: "Peripheral domain clock gating"
+      control_register: "RCC_PERCKSELR"
+  
+  # Clock Security System
+  clock_security_system:
+    css_hse:
+      monitor_source: "osc_hse"
+      failure_action: "switch_to_hsi"
+      interrupt_enable: true
+    
+    css_lse:
+      monitor_source: "osc_lse"
+      failure_action: "switch_to_lsi"
+      interrupt_enable: true
+    
+    css_pll:
+      monitor_source: "pll_outputs"
+      failure_action: "disable_pll"
+      interrupt_enable: true
+  
+  # Clock Multiplexers
+  clock_multiplexers:
+    clk_mux_sys:
+      inputs:
+        - "pll1_p"
+        - "pll2_p"
+        - "osc_hsi"
+        - "osc_hse"
+      selection_control: "RCC_SYSCKSELR"
+      description: "System clock multiplexer"
+
+net:
+  # Clock Distribution Networks
+  clk_osc_hse:
+    - instance: instance.osc_hse
+      port: clk_out
+    - instance: instance.rcc
+      port: hse_in
+  
+  clk_osc_lse:
+    - instance: instance.osc_lse
+      port: clk_out
+    - instance: instance.rcc
+      port: lse_in
+  
+  clk_osc_hsi:
+    - instance: instance.osc_hsi
+      port: clk_out
+    - instance: instance.rcc
+      port: hsi_in
+  
+  clk_osc_lsi:
+    - instance: instance.osc_lsi
+      port: clk_out
+    - instance: instance.rcc
+      port: lsi_in
+  
+  clk_osc_csi:
+    - instance: instance.osc_csi
+      port: clk_out
+    - instance: instance.rcc
+      port: csi_in
+  
+  # PLL Connections to Clock Controllers
+  clk_pll1_p:
+    - instance: instance.pll1
+      port: p_out
+    - instance: instance.rcc
+      port: pll1_p_in
+  
+  clk_pll1_q:
+    - instance: instance.pll1
+      port: q_out
+    - instance: instance.rcc
+      port: pll1_q_in
+  
+  clk_pll1_r:
+    - instance: instance.pll1
+      port: r_out
+    - instance: instance.rcc
+      port: pll1_r_in
+  
+  clk_pll2_p:
+    - instance: instance.pll2
+      port: p_out
+    - instance: instance.rcc
+      port: pll2_p_in
+  
+  clk_pll2_q:
+    - instance: instance.pll2
+      port: q_out
+    - instance: instance.rcc
+      port: pll2_q_in
+  
+  clk_pll2_r:
+    - instance: instance.pll2
+      port: r_out
+    - instance: instance.rcc
+      port: pll2_r_in
+  
+  clk_pll3_p:
+    - instance: instance.pll3
+      port: p_out
+    - instance: instance.rcc
+      port: pll3_p_in
+  
+  clk_pll3_q:
+    - instance: instance.pll3
+      port: q_out
+    - instance: instance.rcc
+      port: pll3_q_in
+  
+  clk_pll3_r:
+    - instance: instance.pll3
+      port: r_out
+    - instance: instance.rcc
+      port: pll3_r_in
+  
+  clk_pll4_p:
+    - instance: instance.pll4
+      port: p_out
+    - instance: instance.rcc
+      port: pll4_p_in
+  
+  clk_pll4_q:
+    - instance: instance.pll4
+      port: q_out
+    - instance: instance.rcc
+      port: pll4_q_in
+  
+  clk_pll4_r:
+    - instance: instance.pll4
+      port: r_out
+    - instance: instance.rcc
+      port: pll4_r_in
+  
+  # Core Clocks
+  clk_mpu:
+    - instance: instance.rcc
+      port: clk_mpu_out
+    - instance: instance.cortex_a35_0
+      port: clk_in
+    - instance: instance.cortex_a35_1
+      port: clk_in
+  
+  clk_mcu:
+    - instance: instance.rcc
+      port: clk_mcu_out
+    - instance: instance.cortex_m33
+      port: clk_in
+  
+  clk_m0plus:
+    - instance: instance.rcc
+      port: clk_m0_out
+    - instance: instance.cortex_m0plus
+      port: clk_in
+  
+  clk_axi:
+    - instance: instance.rcc
+      port: clk_axi_out
+    - instance: instance.axi_interconnect
+      port: clk_in
+  
+  clk_ahb:
+    - instance: instance.rcc
+      port: clk_ahb_out
+    - instance: instance.ahb_interconnect
+      port: clk_in
+  
+  clk_apb:
+    - instance: instance.rcc
+      port: clk_apb_out
+    - instance: instance.apb_interconnect
+      port: clk_in
+  
+  # Peripheral Clocks
+  clk_gpu:
+    - instance: instance.rcc
+      port: clk_gpu_out
+    - instance: instance.gpu_core
+      port: clk_in
+  
+  clk_npu:
+    - instance: instance.rcc
+      port: clk_npu_out
+    - instance: instance.npu_core
+      port: clk_in
+  
+  clk_vdec:
+    - instance: instance.rcc
+      port: clk_vdec_out
+    - instance: instance.video_decoder
+      port: clk_in
+  
+  clk_venc:
+    - instance: instance.rcc
+      port: clk_venc_out
+    - instance: instance.video_encoder
+      port: clk_in
+  
+  clk_ddr:
+    - instance: instance.rcc
+      port: clk_ddr_out
+    - instance: instance.ddr_ctrl
+      port: clk_in
+  
+  clk_eth:
+    - instance: instance.rcc
+      port: clk_eth_out
+    - instance: instance.eth_mac
+      port: clk_in
+  
+  clk_usb:
+    - instance: instance.rcc
+      port: clk_usb_out
+    - instance: instance.usb_otg
+      port: clk_in
+  
+  clk_pcie:
+    - instance: instance.rcc
+      port: clk_pcie_out
+    - instance: instance.pcie_ctrl
+      port: clk_in
+  
+  clk_sdmmc:
+    - instance: instance.rcc
+      port: clk_sdmmc_out
+    - instance: instance.sdmmc
+      port: clk_in
+  
+  clk_qspi:
+    - instance: instance.rcc
+      port: clk_qspi_out
+    - instance: instance.qspi
+      port: clk_in
+  
+  clk_i2c:
+    - instance: instance.rcc
+      port: clk_i2c_out
+    - instance: instance.i2c1
+      port: clk_in
+    - instance: instance.i2c2
+      port: clk_in
+    - instance: instance.i2c3
+      port: clk_in
+  
+  clk_spi:
+    - instance: instance.rcc
+      port: clk_spi_out
+    - instance: instance.spi1
+      port: clk_in
+    - instance: instance.spi2
+      port: clk_in
+    - instance: instance.spi3
+      port: clk_in
+  
+  clk_usart:
+    - instance: instance.rcc
+      port: clk_usart_out
+    - instance: instance.usart1
+      port: clk_in
+    - instance: instance.usart2
+      port: clk_in
+    - instance: instance.usart3
+      port: clk_in
+  
+  clk_can:
+    - instance: instance.rcc
+      port: clk_can_out
+    - instance: instance.can1
+      port: clk_in
+    - instance: instance.can2
+      port: clk_in
+  
+  clk_adc:
+    - instance: instance.rcc
+      port: clk_adc_out
+    - instance: instance.adc1
+      port: clk_in
+    - instance: instance.adc2
+      port: clk_in
+  
+  clk_dac:
+    - instance: instance.rcc
+      port: clk_dac_out
+    - instance: instance.dac
+      port: clk_in
+  
+  clk_timer:
+    - instance: instance.rcc
+      port: clk_timer_out
+    - instance: instance.timer1
+      port: clk_in
+    - instance: instance.timer2
+      port: clk_in
+    - instance: instance.timer3
+      port: clk_in
+    - instance: instance.timer4
+      port: clk_in
+  
+  # Clock Dividers
+  clk_pll1_p_div:
+    - instance: instance.clk_divider
+      port: pll1_p_div_out
+    - instance: instance.rcc
+      port: pll1_p_div_in
+  
+  clk_pll1_q_div:
+    - instance: instance.clk_divider
+      port: pll1_q_div_out
+    - instance: instance.rcc
+      port: pll1_q_div_in
+  
+  clk_pll1_r_div:
+    - instance: instance.clk_divider
+      port: pll1_r_div_out
+    - instance: instance.rcc
+      port: pll1_r_div_in
+  
+  clk_pll2_p_div:
+    - instance: instance.clk_divider
+      port: pll2_p_div_out
+    - instance: instance.rcc
+      port: pll2_p_div_in
+  
+  clk_pll2_q_div:
+    - instance: instance.clk_divider
+      port: pll2_q_div_out
+    - instance: instance.rcc
+      port: pll2_q_div_in
+  
+  clk_pll2_r_div:
+    - instance: instance.clk_divider
+      port: pll2_r_div_out
+    - instance: instance.rcc
+      port: pll2_r_div_in
+  
+  clk_pll3_p_div:
+    - instance: instance.clk_divider
+      port: pll3_p_div_out
+    - instance: instance.rcc
+      port: pll3_p_div_in
+  
+  clk_pll3_q_div:
+    - instance: instance.clk_divider
+      port: pll3_q_div_out
+    - instance: instance.rcc
+      port: pll3_q_div_in
+  
+  clk_pll3_r_div:
+    - instance: instance.clk_divider
+      port: pll3_r_div_out
+    - instance: instance.rcc
+      port: pll3_r_div_in
+  
+  clk_pll4_p_div:
+    - instance: instance.clk_divider
+      port: pll4_p_div_out
+    - instance: instance.rcc
+      port: pll4_p_div_in
+  
+  clk_pll4_q_div:
+    - instance: instance.clk_divider
+      port: pll4_q_div_out
+    - instance: instance.rcc
+      port: pll4_q_div_in
+  
+  clk_pll4_r_div:
+    - instance: instance.clk_divider
+      port: pll4_r_div_out
+    - instance: instance.rcc
+      port: pll4_r_div_in
+
+comb:
+  # Clock Status and Security
+  clk_ready: { bits: 1, expr: "osc_hse_ready & osc_lse_ready & osc_hsi_ready & osc_lsi_ready & osc_csi_ready" }
+  osc_hse_ready: { bits: 1, expr: "osc_hse.stable" }
+  osc_lse_ready: { bits: 1, expr: "osc_lse.stable" }
+  osc_hsi_ready: { bits: 1, expr: "osc_hsi.stable" }
+  osc_lsi_ready: { bits: 1, expr: "osc_lsi.stable" }
+  osc_csi_ready: { bits: 1, expr: "osc_csi.stable" }
+
+  # PLL Lock Status
+  pll1_lock: { bits: 1, expr: "rcc.pll1_lock" }
+  pll2_lock: { bits: 1, expr: "rcc.pll2_lock" }
+  pll3_lock: { bits: 1, expr: "rcc.pll3_lock" }
+  pll4_lock: { bits: 1, expr: "rcc.pll4_lock" }
+  pll_all_locked: { bits: 1, expr: "pll1_lock & pll2_lock & pll3_lock & pll4_lock" }
+
+  # Clock Security System Status
+  css_hse_ok: { bits: 1, expr: "!css_hse_flag" }
+  css_lse_ok: { bits: 1, expr: "!css_lse_flag" }
+  css_pll_ok: { bits: 1, expr: "!css_pll_flag" }
+  css_system_ok: { bits: 1, expr: "css_hse_ok & css_lse_ok & css_pll_ok" }
+
+  # System Clock Ready
+  sysclk_ready: { bits: 1, expr: "clk_ready & pll_all_locked & css_system_ok" }
+  
+  # Clock Status Flags
+  clk_status_hse: { expr: "osc_hse_ready & css_hse_ok" }
+  clk_status_hsi: { expr: "osc_hsi_ready" }
+  clk_status_pll: { expr: "pll_all_locked & css_pll_ok" }
+  clk_status_lse: { expr: "osc_lse_ready & css_lse_ok" }
+  clk_status_lsi: { expr: "osc_lsi_ready" }
+  clk_status_csi: { expr: "osc_csi_ready" }
+
+validation:
+  # Clock System Status
+  clock_system_ready:
+    driver: comb.clock_system_final
+  pll_system_ready:
+    driver: comb.pll_final
+  oscillator_ready:
+    driver: comb.osc_final
+  
+  # Clock System Validation Rules
+  clock_system_final: { expr: "pll_final & osc_final & clock_distribution_ready & !css_fail" }
+  pll_final: { expr: "pll1_ready & pll2_ready & pll3_ready & pll4_ready & pll_lock_all & pll_clock_enabled" }
+  osc_final: { expr: "hse_ready & hsi_ready & lse_ready & lsi_ready & css_osc_ready" }

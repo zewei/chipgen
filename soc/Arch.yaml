@@ -352,7 +352,7 @@ clock:
     select: sys_clk_sel
     default: pll1_p
     description: "System clock multiplexer"
-
+# Part 1：Top-level ports
 port:
   # External Clocks
   HSE:
@@ -512,7 +512,6 @@ port:
   DCMI_VSYNC:
     direction: input
     type: logic
-
 
 instance:
   # Processor Cores
@@ -8569,3 +8568,208 @@ comb:
   dbg_reset_active: { bits: 1, expr: "!dbg_cpu_rst_n || !dbg_mcu_rst_n" }
   dbg_cpu_reset_active: { bits: 1, expr: "!dbg_cpu_rst_n" }
   dbg_mcu_reset_active: { bits: 1, expr: "!dbg_mcu_rst_n" }
+
+# 参数合法性检查规则
+validation:
+  # RCC参数验证规则
+  rcc_parameter_rules:
+    - rule: frequency_range_check
+      description: "RCC频率参数范围检查"
+      target: instance.rcc.parameter.FREQUENCY
+      condition: "value >= 1000000 && value <= 1000000000"
+      severity: error
+      message: "RCC频率必须在1MHz到1GHz之间"
+    
+    - rule: pll_count_validation
+      description: "PLL数量参数验证"
+      target: instance.rcc.parameter.PLL_COUNT
+      condition: "value >= 1 && value <= 8"
+      severity: error
+      message: "PLL数量必须在1到8之间"
+    
+    - rule: clock_source_validation
+      description: "时钟源数量参数验证"
+      target: instance.rcc.parameter.CLOCK_SOURCE_COUNT
+      condition: "value >= 2 && value <= 10"
+      severity: error
+      message: "时钟源数量必须在2到10之间"
+  
+  # 通用时钟频率参数验证
+  clock_frequency_rules:
+    - rule: cpu_frequency_range
+      description: "CPU时钟频率范围检查"
+      target: "instance.*.parameter.FREQUENCY"
+      condition: "value >= 1000000 && value <= 2000000000"
+      severity: error
+      message: "CPU时钟频率必须在1MHz到2GHz之间"
+      applies_to: ["cortexa35", "cortexm33", "cortexm0plus"]
+    
+    - rule: peripheral_frequency_range
+      description: "外设时钟频率范围检查"
+      target: "instance.*.parameter.FREQUENCY"
+      condition: "value >= 100000 && value <= 500000000"
+      severity: warning
+      message: "外设时钟频率建议在100kHz到500MHz之间"
+      applies_to: ["gpio", "timer", "usart", "spi", "i2c"]
+    
+    - rule: bus_frequency_range
+      description: "总线时钟频率范围检查"
+      target: "instance.*.parameter.FREQUENCY"
+      condition: "value >= 1000000 && value <= 800000000"
+      severity: error
+      message: "总线时钟频率必须在1MHz到800MHz之间"
+      applies_to: ["axi_interconnect", "ahb_interconnect", "apb_interconnect"]
+  
+  # 存储器参数验证
+  memory_parameter_rules:
+    - rule: flash_size_validation
+      description: "Flash存储器大小验证"
+      target: instance.flash.parameter.FLASH_SIZE
+      condition: "value >= 65536 && value <= 16777216"
+      severity: error
+      message: "Flash大小必须在64KB到16MB之间"
+    
+    - rule: flash_sector_count
+      description: "Flash扇区数量验证"
+      target: instance.flash.parameter.SECTOR_COUNT
+      condition: "value >= 4 && value <= 256"
+      severity: warning
+      message: "Flash扇区数量建议在4到256之间"
+    
+    - rule: ddr_size_validation
+      description: "DDR存储器大小验证"
+      target: instance.ddrc.parameter.MEMORY_SIZE
+      condition: "value >= 8388608 && value <= 4294967296"
+      severity: error
+      message: "DDR大小必须在8MB到4GB之间"
+  
+  # 外设参数验证
+  peripheral_parameter_rules:
+    - rule: gpio_pin_count
+      description: "GPIO端口引脚数量验证"
+      target: "instance.gpio*.parameter.PIN_COUNT"
+      condition: "value >= 1 && value <= 32"
+      severity: error
+      message: "GPIO端口引脚数量必须在1到32之间"
+    
+    - rule: timer_prescaler_range
+      description: "定时器预分频器范围检查"
+      target: "instance.*timer*.parameter.PRESCALER"
+      condition: "value >= 0 && value <= 65535"
+      severity: error
+      message: "定时器预分频器必须在0到65535之间"
+    
+    - rule: usart_baudrate_range
+      description: "USART波特率范围检查"
+      target: "instance.usart*.parameter.BAUDRATE"
+      condition: "value >= 300 && value <= 3000000"
+      severity: warning
+      message: "USART波特率建议在300到3Mbps之间"
+  
+  # 系统参数验证
+  system_parameter_rules:
+    - rule: power_domain_count
+      description: "电源域数量验证"
+      target: "instance.*pwr*.parameter.POWER_DOMAIN_COUNT"
+      condition: "value >= 1 && value <= 16"
+      severity: error
+      message: "电源域数量必须在1到16之间"
+    
+    - rule: interrupt_priority_bits
+      description: "中断优先级位宽验证"
+      target: "instance.*nvic*.parameter.PRIORITY_BITS"
+      condition: "value >= 2 && value <= 8"
+      severity: error
+      message: "中断优先级位宽必须在2到8之间"
+    
+    - rule: dma_channel_count
+      description: "DMA通道数量验证"
+      target: "instance.*dma*.parameter.CHANNEL_COUNT"
+      condition: "value >= 1 && value <= 32"
+      severity: error
+      message: "DMA通道数量必须在1到32之间"
+  
+  # 安全参数验证
+  security_parameter_rules:
+    - rule: boot_mode_count
+      description: "启动模式数量验证"
+      target: instance.syscfg.parameter.BOOT_MODE_COUNT
+      condition: "value >= 2 && value <= 16"
+      severity: error
+      message: "启动模式数量必须在2到16之间"
+    
+    - rule: exti_line_count
+      description: "外部中断线数量验证"
+      target: instance.syscfg.parameter.EXTI_COUNT
+      condition: "value >= 1 && value <= 128"
+      severity: error
+      message: "外部中断线数量必须在1到128之间"
+    
+    - rule: tamper_pin_count
+      description: "防篡改引脚数量验证"
+      target: "instance.*tamp*.parameter.PIN_COUNT"
+      condition: "value >= 0 && value <= 8"
+      severity: warning
+      message: "防篡改引脚数量建议在0到8之间"
+  
+  # 参数依赖关系验证
+  parameter_dependency_rules:
+    - rule: pll_frequency_dependency
+      description: "PLL频率依赖关系检查"
+      target: "instance.rcc.parameter.*"
+      condition: "pll1_p_freq <= pll1_vco_freq && pll1_p_freq >= (pll1_vco_freq / 128)"
+      severity: error
+      message: "PLL输出频率必须在VCO频率的1/128到1倍之间"
+    
+    - rule: clock_divider_dependency
+      description: "时钟分频器依赖关系检查"
+      target: "instance.*clk_divider*.parameter.*"
+      condition: "input_freq >= output_freq && input_freq % output_freq == 0"
+      severity: error
+      message: "时钟分频器输入频率必须是输出频率的整数倍"
+    
+    - rule: memory_timing_dependency
+      description: "存储器时序参数依赖关系"
+      target: "instance.*ddr*.parameter.*"
+      condition: "cas_latency <= ras_to_cas_delay && ras_to_cas_delay <= row_precharge_time"
+      severity: error
+      message: "存储器时序参数不满足约束关系(CL <= tRCD <= tRP)"
+  
+  # 性能参数验证
+  performance_parameter_rules:
+    - rule: max_frequency_limit
+      description: "最大频率限制检查"
+      target: "instance.*.parameter.FREQUENCY"
+      condition: "value <= instance.*.parameter.MAX_FREQUENCY"
+      severity: error
+      message: "工作频率不能超过最大允许频率"
+    
+    - rule: power_consumption_limit
+      description: "功耗限制检查"
+      target: "instance.*.parameter.POWER_CONSUMPTION"
+      condition: "value <= instance.*.parameter.MAX_POWER"
+      severity: warning
+      message: "功耗超过建议最大值"
+    
+    - rule: temperature_range_check
+      description: "工作温度范围检查"
+      target: "instance.*.parameter.OPERATING_TEMP"
+      condition: "value >= -40 && value <= 125"
+      severity: error
+      message: "工作温度必须在-40°C到125°C之间"
+  
+  # 兼容性检查
+  compatibility_rules:
+    - rule: voltage_compatibility
+      description: "电压兼容性检查"
+      target: "instance.*.parameter.OPERATING_VOLTAGE"
+      condition: "abs(value - 1.2) <= 0.1 || abs(value - 1.8) <= 0.1 || abs(value - 3.3) <= 0.3"
+      severity: error
+      message: "工作电压必须是标准值(1.2V, 1.8V, 3.3V)"
+    
+    - rule: io_standard_compatibility
+      description: "I/O标准兼容性检查"
+      target: "instance.gpio*.parameter.IO_STANDARD"
+      condition: "value in ['LVCMOS12', 'LVCMOS18', 'LVCMOS33', 'LVTTL', 'SSTL15']"
+      severity: warning
+      message: "建议使用标准I/O电平标准"

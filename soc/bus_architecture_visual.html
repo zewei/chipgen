@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOC Bus Architecture Visualization</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .architecture {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            align-items: center;
+        }
+        
+        .bus-level {
+            width: 100%;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .axi-level {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+        }
+        
+        .ahb-level {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            color: white;
+        }
+        
+        .apb-level {
+            background: linear-gradient(135deg, #feca57, #ff9ff3);
+            color: white;
+        }
+        
+        .bus-title {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .bus-subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+        
+        .components {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .component {
+            background: rgba(255,255,255,0.2);
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 2px solid rgba(255,255,255,0.3);
+            min-width: 120px;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .master {
+            border-color: #2ecc71;
+            background: rgba(46, 204, 113, 0.2);
+        }
+        
+        .slave {
+            border-color: #e74c3c;
+            background: rgba(231, 76, 60, 0.2);
+        }
+        
+        .bridge {
+            border-color: #f39c12;
+            background: rgba(243, 156, 18, 0.2);
+        }
+        
+        .connection {
+            width: 2px;
+            height: 30px;
+            background: linear-gradient(to bottom, #34495e, #2c3e50);
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .connection::before {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: -3px;
+            width: 8px;
+            height: 8px;
+            background: #2c3e50;
+            border-radius: 50%;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        
+        .performance-table {
+            margin-top: 30px;
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .performance-table th,
+        .performance-table td {
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .performance-table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-weight: bold;
+        }
+        
+        .performance-table tr:hover {
+            background: #f5f5f5;
+        }
+        
+        .bus-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .stat-label {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚌 SOC Bus Interconnect Architecture</h1>
+        
+        <div class="architecture">
+            <!-- AXI Level -->
+            <div class="bus-level axi-level">
+                <div class="bus-title">AXI Interconnect</div>
+                <div class="bus-subtitle">High Performance Bus (Up to 1GHz, 64/128-bit)</div>
+                <div class="components">
+                    <div class="component master">CPU Core</div>
+                    <div class="component master">DMA Controller</div>
+                    <div class="component master">Ethernet MAC</div>
+                    <div class="component master">USB Controller</div>
+                    <div class="component master">PCIe Controller</div>
+                </div>
+                <div class="components">
+                    <div class="component slave">DDR Controller</div>
+                    <div class="component slave">SRAM Controller</div>
+                    <div class="component slave">QSPI Controller</div>
+                    <div class="component bridge">AHB Bridge</div>
+                </div>
+            </div>
+            
+            <div class="connection"></div>
+            
+            <!-- AHB Level -->
+            <div class="bus-level ahb-level">
+                <div class="bus-title">AHB Interconnect</div>
+                <div class="bus-subtitle">Medium Performance Bus (Up to 200MHz, 32/64-bit)</div>
+                <div class="components">
+                    <div class="component master">AXI Bridge</div>
+                    <div class="component master">SDMMC Controller</div>
+                    <div class="component master">MDMA Controller</div>
+                </div>
+                <div class="components">
+                    <div class="component slave">SRAM1 (128KB)</div>
+                    <div class="component slave">SRAM2 (128KB)</div>
+                    <div class="component slave">SRAM3 (64KB)</div>
+                    <div class="component slave">SRAM4 (64KB)</div>
+                    <div class="component slave">RET SRAM (32KB)</div>
+                    <div class="component bridge">APB Bridge</div>
+                </div>
+            </div>
+            
+            <div class="connection"></div>
+            
+            <!-- APB Level -->
+            <div class="bus-level apb-level">
+                <div class="bus-title">APB Interconnect</div>
+                <div class="bus-subtitle">Low Power Bus (Up to 50MHz, 32-bit)</div>
+                <div class="components">
+                    <div class="component master">AHB Bridge</div>
+                    <div class="component master">Debug Interface</div>
+                </div>
+                
+                <div style="margin-top: 20px; font-weight: bold;">Peripheral Categories:</div>
+                <div class="components">
+                    <div class="component slave">Timers<br/>(17x General + 2x LP + 1x HR)</div>
+                    <div class="component slave">Communication<br/>(5x I2C + 5x SPI + 8x USART)</div>
+                    <div class="component slave">GPIO<br/>(8 Ports A-H)</div>
+                    <div class="component slave">Analog<br/>(2x ADC + 1x DAC + Temp)</div>
+                    <div class="component slave">System<br/>(SYSCFG + PWR + RCC + FLASH)</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #2ecc71, #27ae60);"></div>
+                <span>Bus Masters</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #e74c3c, #c0392b);"></div>
+                <span>Bus Slaves</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #f39c12, #e67e22);"></div>
+                <span>Bus Bridges</span>
+            </div>
+        </div>
+        
+        <table class="performance-table">
+            <thead>
+                <tr>
+                    <th>Bus Type</th>
+                    <th>Data Width</th>
+                    <th>Max Frequency</th>
+                    <th>Peak Throughput</th>
+                    <th>Arbitration</th>
+                    <th>Primary Use</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>AXI</strong></td>
+                    <td>64/128-bit</td>
+                    <td>1 GHz</td>
+                    <td>8-16 GB/s</td>
+                    <td>Multi-layer</td>
+                    <td>CPU, DMA, High-speed peripherals</td>
+                </tr>
+                <tr>
+                    <td><strong>AHB</strong></td>
+                    <td>32/64-bit</td>
+                    <td>200 MHz</td>
+                    <td>800 MB/s-1.6 GB/s</td>
+                    <td>Round-robin</td>
+                    <td>SRAM, Flash, SDMMC</td>
+                </tr>
+                <tr>
+                    <td><strong>APB</strong></td>
+                    <td>32-bit</td>
+                    <td>50 MHz</td>
+                    <td>200 MB/s</td>
+                    <td>Single-master</td>
+                    <td>Configuration registers</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="bus-stats">
+            <div class="stat-card">
+                <div class="stat-number">25</div>
+                <div class="stat-label">Total Buses</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">3</div>
+                <div class="stat-label">Bus Types (AXI/AHB/APB)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">40+</div>
+                <div class="stat-label">Connected Peripherals</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">1GHz</div>
+                <div class="stat-label">Max Bus Frequency</div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+            <h3 style="color: #2c3e50; margin-bottom: 15px;">🔧 Key Architectural Features</h3>
+            <ul style="color: #34495e; line-height: 1.8;">
+                <li><strong>Hierarchical Bus Structure:</strong> AXI → AHB → APB for optimal performance/power balance</li>
+                <li><strong>Bridge Architecture:</strong> Seamless protocol conversion between bus domains</li>
+                <li><strong>Multi-Master Support:</strong> CPU, DMA, and peripherals can act as bus masters</li>
+                <li><strong>Modular Design:</strong> Easy to add new masters/slaves without affecting existing connections</li>
+                <li><strong>Performance Optimization:</strong> Separate buses for different performance classes</li>
+                <li><strong>Clock Domain Crossing:</strong> Bridges handle different clock frequencies safely</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

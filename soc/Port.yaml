@@ -1,0 +1,162 @@
+# Port Definitions for SoC Architecture
+# Extracted from Arch.yaml
+
+port:
+  # External Clocks
+  HSE:
+    direction: input
+    type: logic
+    description: "16-48 MHz crystal oscillator (required for DDR and USB)"
+  LSE:
+    direction: input
+    type: logic
+    description: "32.768 kHz crystal oscillator (RTC)"
+  
+  # External Reset
+  NRST:
+    direction: inout
+    type: logic
+    description: "Active low, open-drain, 20kΩ internal pull-up"
+  
+  # Boot Selection
+  BOOT:
+    direction: input
+    type: logic[3:0]
+    description: "Boot selection pins with OTP override capability"
+  
+  # Reset Control
+  reason_clear:
+    direction: input
+    type: logic
+    description: "Software clear signal for reset reason recording"
+  test_en:
+    direction: input
+    type: logic
+    description: "Test enable signal for DFT bypass"
+  
+  # Power Supplies
+  VDD:
+    direction: inout
+    type: logic
+    description: "Main I/O supply (1.71-1.95V or 2.7-3.6V)"
+  VDDCORE:
+    direction: inout
+    type: logic
+    description: "Digital core supply"
+  VDDCPU:
+    direction: inout
+    type: logic
+    description: "Cortex-A35 supply"
+  VDDGPU:
+    direction: inout
+    type: logic
+    description: "GPU/NPU supply (optional)"
+  VBAT:
+    direction: inout
+    type: logic
+    description: "Backup domain supply (1.55-3.6V)"
+  
+  # DDR Interface
+  DDR_CLK:
+    direction: output
+    type: logic
+  DDR_ADDR:
+    direction: output
+    type: logic[15:0]
+  DDR_DATA:
+    direction: inout
+    type: logic[31:0]
+  DDR_CTRL:
+    direction: output
+    type: logic[11:0]
+  
+  # Ethernet Interfaces
+  ETH1_RGMII:
+    direction: inout
+    type: logic[31:0]
+    description: "Gigabit GMAC with one PHY interface (optional)"
+  ETH2_RGMII:
+    direction: inout
+    type: logic[31:0]
+    description: "Gigabit GMAC with external PHY interface"
+  ETHSW_RGMII:
+    direction: inout
+    type: logic[95:0]
+    description: "3-port Gigabit Ethernet switch (optional, STM32MP257x)"
+  
+  # USB Interfaces
+  USBH_DP:
+    direction: inout
+    type: logic
+  USBH_DM:
+    direction: inout
+    type: logic
+  USB3DR_SSTX:
+    direction: output
+    type: logic[2:0]
+  USB3DR_SSRX:
+    direction: input
+    type: logic[2:0]
+  USB3DR_DP:
+    direction: inout
+    type: logic
+  USB3DR_DM:
+    direction: inout
+    type: logic
+  
+  # PCIe Interface
+  PCIE_TX:
+    direction: output
+    type: logic[3:0]
+  PCIE_RX:
+    direction: input
+    type: logic[3:0]
+  
+  # Display Interfaces
+  LCD_RGB:
+    direction: output
+    type: logic[23:0]
+  LCD_HSYNC:
+    direction: output
+    type: logic
+  LCD_VSYNC:
+    direction: output
+    type: logic
+  LCD_DE:
+    direction: output
+    type: logic
+  LCD_CLK:
+    direction: output
+    type: logic
+  
+  DSI_CLK:
+    direction: output
+    type: logic[3:0]
+  DSI_DATA:
+    direction: output
+    type: logic[3:0]
+  
+  LVDS_TX:
+    direction: output
+    type: logic[7:0]
+  
+  # Camera Interface
+  CSI_CLK:
+    direction: input
+    type: logic[1:0]
+  CSI_DATA:
+    direction: input
+    type: logic[1:0]
+  
+  DCMI_DATA:
+    direction: input
+    type: logic[15:0]
+  DCMI_PIXCLK:
+    direction: input
+    type: logic
+  DCMI_HSYNC:
+    direction: input
+    type: logic
+  DCMI_VSYNC:
+    direction: input
+    type: logic

@@ -1,0 +1,1619 @@
+# Top-level SoC Architecture Definition
+# Merged from Port.yaml and Instance.yaml
+# SOC Net Format Specification Compliant
+
+# Validation Rules
+validation:
+  - rule: "port_direction_consistency"
+    description: "All port directions must be consistent with their usage"
+    severity: error
+  - rule: "instance_link_validity"
+    description: "All instance links must reference existing ports or signals"
+    severity: error
+  - rule: "bus_topology_completeness"
+    description: "All buses must have complete master-slave topology"
+    severity: warning
+  - rule: "clock_domain_crossing_safety"
+    description: "All clock domain crossings must be properly synchronized"
+    severity: error
+  - rule: "reset_network_integrity"
+    description: "Reset network must have proper hierarchy and synchronization"
+    severity: error
+
+# Port Definitions
+port:
+  # External Clocks
+  HSE:
+    direction: input
+    type: logic
+    description: "16-48 MHz crystal oscillator (required for DDR and USB)"
+  LSE:
+    direction: input
+    type: logic
+    description: "32.768 kHz crystal oscillator (RTC)"
+  
+  # External Reset
+  NRST:
+    direction: inout
+    type: logic
+    description: "Active low, open-drain, 20kΩ internal pull-up"
+  
+  # Boot Selection
+  BOOT:
+    direction: input
+    type: logic[3:0]
+    description: "Boot selection pins with OTP override capability"
+  
+  # Reset Control
+  reason_clear:
+    direction: input
+    type: logic
+    description: "Software clear signal for reset reason recording"
+  test_en:
+    direction: input
+    type: logic
+    description: "Test enable signal for DFT bypass"
+  
+  # Power Supplies
+  VDD:
+    direction: inout
+    type: logic
+    description: "Main I/O supply (1.71-1.95V or 2.7-3.6V)"
+  VDDCORE:
+    direction: inout
+    type: logic
+    description: "Digital core supply"
+  VDDCPU:
+    direction: inout
+    type: logic
+    description: "Cortex-A35 supply"
+  VDDGPU:
+    direction: inout
+    type: logic
+    description: "GPU/NPU supply (optional)"
+  VBAT:
+    direction: inout
+    type: logic
+    description: "Backup domain supply (1.55-3.6V)"
+  
+  # DDR Interface
+  DDR_CLK:
+    direction: output
+    type: logic
+    description: "DDR clock output (up to 533 MHz)"
+  DDR_ADDR:
+    direction: output
+    type: logic[15:0]
+    description: "DDR address bus (16-bit row/column address)"
+  DDR_DATA:
+    direction: inout
+    type: logic[31:0]
+    description: "DDR data bus (32-bit bidirectional)"
+  DDR_CTRL:
+    direction: output
+    type: logic[11:0]
+    description: "DDR control signals (CS, RAS, CAS, WE, BA, CKE, ODT)"
+  
+  # Ethernet Interfaces
+  ETH1_RGMII:
+    direction: inout
+    type: logic[31:0]
+    description: "Gigabit GMAC with one PHY interface (optional)"
+  ETH2_RGMII:
+    direction: inout
+    type: logic[31:0]
+    description: "Gigabit GMAC with external PHY interface"
+  ETHSW_RGMII:
+    direction: inout
+    type: logic[95:0]
+    description: "3-port Gigabit Ethernet switch (optional, STM32MP257x)"
+  
+  # USB Interfaces
+  USBH_DP:
+    direction: inout
+    type: logic
+    description: "USB Host Data Plus (USB 2.0 HS/FS/LS)"
+  USBH_DM:
+    direction: inout
+    type: logic
+    description: "USB Host Data Minus (USB 2.0 HS/FS/LS)"
+  USB3DR_SSTX:
+    direction: output
+    type: logic[2:0]
+    description: "USB 3.0 SuperSpeed TX differential pairs (3 lanes)"
+  USB3DR_SSRX:
+    direction: input
+    type: logic[2:0]
+    description: "USB 3.0 SuperSpeed RX differential pairs (3 lanes)"
+  USB3DR_DP:
+    direction: inout
+    type: logic
+    description: "USB 3.0 Device Data Plus (USB 2.0 compatibility)"
+  USB3DR_DM:
+    direction: inout
+    type: logic
+    description: "USB 3.0 Device Data Minus (USB 2.0 compatibility)"
+  
+  # PCIe Interface
+  PCIE_TX:
+    direction: output
+    type: logic[3:0]
+    description: "PCIe transmit differential pairs (4 lanes)"
+  PCIE_RX:
+    direction: input
+    type: logic[3:0]
+    description: "PCIe receive differential pairs (4 lanes)"
+  
+  # Display Interfaces
+  LCD_RGB:
+    direction: output
+    type: logic[23:0]
+    description: "LCD RGB data bus (24-bit color, R[7:0], G[7:0], B[7:0])"
+  LCD_HSYNC:
+    direction: output
+    type: logic
+    description: "LCD horizontal synchronization signal"
+  LCD_VSYNC:
+    direction: output
+    type: logic
+    description: "LCD vertical synchronization signal"
+  LCD_DE:
+    direction: output
+    type: logic
+    description: "LCD data enable signal (active high)"
+  LCD_CLK:
+    direction: output
+    type: logic
+    description: "LCD pixel clock (up to 100 MHz)"
+  
+  DSI_CLK:
+    direction: output
+    type: logic[3:0]
+    description: "MIPI DSI clock lanes (4 differential pairs)"
+  DSI_DATA:
+    direction: output
+    type: logic[3:0]
+    description: "MIPI DSI data lanes (4 differential pairs)"
+  
+  LVDS_TX:
+    direction: output
+    type: logic[7:0]
+    description: "LVDS transmit pairs (8 differential pairs for display)"
+  
+  # Camera Interface
+  CSI_CLK:
+    direction: input
+    type: logic[1:0]
+    description: "MIPI CSI-2 clock lanes (2 differential pairs)"
+  CSI_DATA:
+    direction: input
+    type: logic[1:0]
+    description: "MIPI CSI-2 data lanes (2 differential pairs)"
+  
+  DCMI_DATA:
+    direction: input
+    type: logic[15:0]
+    description: "DCMI parallel data bus (16-bit)"
+  DCMI_PIXCLK:
+    direction: input
+    type: logic
+    description: "DCMI pixel clock input"
+  DCMI_HSYNC:
+    direction: input
+    type: logic
+    description: "DCMI horizontal synchronization"
+  DCMI_VSYNC:
+    direction: input
+    type: logic
+    description: "DCMI vertical synchronization"
+
+# Instance Definitions
+instance:
+  # Processor Cores
+  cortex_a35_0:
+    module: cortex_a35
+    version: "r1p0"
+    parameter_validation:
+      - rule: "frequency_range"
+        description: "CPU frequency must be within valid range"
+        condition: "FREQUENCY >= 600MHz AND FREQUENCY <= 1500MHz"
+      - rule: "cache_alignment"
+        description: "Cache sizes must be power of 2"
+        condition: "is_power_of_2(CACHE_L1I_SIZE) AND is_power_of_2(CACHE_L1D_SIZE) AND is_power_of_2(CACHE_L2_SIZE)"
+    parameter:
+      CORE_ID: 0
+      FREQUENCY: 1200000000
+      CACHE_L1I_SIZE: 32768
+      CACHE_L1D_SIZE: 32768
+      CACHE_L2_SIZE: 524288
+    port:
+      CLK:
+        link: clk_mpu
+      RESET_N:
+        link: rst_mpu
+      IRQ:
+        link: gic_irq
+      FIQ:
+        link: gic_fiq
+  
+  cortex_a35_1:
+    module: cortex_a35
+    version: "r1p0"
+    parameter:
+      CORE_ID: 1
+      FREQUENCY: 1200000000
+      CACHE_L1I_SIZE: 32768
+      CACHE_L1D_SIZE: 32768
+      CACHE_L2_SIZE: 524288
+    port:
+      CLK:
+        link: clk_mpu
+      RESET_N:
+        link: rst_mpu
+      IRQ:
+        link: gic_irq
+      FIQ:
+        link: gic_fiq
+  
+  cortex_m33:
+    module: cortex_m33
+    version: "r0p3"
+    parameter:
+      FREQUENCY: 400000000
+      CACHE_SIZE: 16384
+      FPU: true
+      MPU: true
+      TRUSTZONE: true
+    port:
+      CLK:
+        link: clk_mcu
+      RESET_N:
+        link: rst_mcu
+      IRQ:
+        link: nvic_irq
+  
+  cortex_m0plus:
+    module: cortex_m0plus
+    version: "r0p1"
+    parameter:
+      FREQUENCY: 200000000
+      BACKUP_FREQ: 16000000
+    port:
+      CLK:
+        link: clk_mcu
+      RESET_N:
+        link: rst_m0
+      IRQ:
+        link: exti2_irq
+  
+  # Graphics and AI (Optional)
+  gpu_core:
+    module: gpu
+    version: "v1.0"
+    parameter:
+      CORE_COUNT: 1
+      FREQUENCY: 800000000
+    port:
+      CLK:
+        link: clk_gpu
+      RESET_N:
+        link: rst_gpu
+      AXI_MASTER:
+        link: gpu_axi
+  
+  npu_core:
+    module: npu
+    version: "v2.0"
+    parameter:
+      CORE_COUNT: 1
+      FREQUENCY: 1000000000
+    port:
+      CLK:
+        link: clk_npu
+      RESET_N:
+        link: rst_npu
+      AXI_MASTER:
+        link: npu_axi
+  
+  # Video Processing (Optional)
+  video_encoder:
+    module: video_encoder
+    parameter:
+      FREQUENCY: 600000000
+      FORMAT_H264: true
+      FORMAT_VP8: true
+      MAX_RESOLUTION: "1080p60"
+      JPEG_RATE: 500000000
+    port:
+      CLK:
+        link: clk_venc
+      RESET_N:
+        link: rst_venc
+      AXI_MASTER:
+        link: venc_axi
+      VIDEO_IN:
+        link: dcmipp_video
+  
+  video_decoder:
+    module: video_decoder
+    parameter:
+      FREQUENCY: 600000000
+      FORMAT_H264: true
+      FORMAT_VP8: true
+      MAX_RESOLUTION: "1080p60"
+      SHARED_RAM: 131072
+    port:
+      CLK:
+        link: clk_vdec
+      RESET_N:
+        link: rst_vdec
+      AXI_MASTER:
+        link: vdec_axi
+      VIDEO_OUT:
+        link: ltdc_video
+  
+  # Clock and Reset Controller (RCC) - Enhanced with QSoC Reset Format
+  rcc:
+    module: rcc
+    version: "v3.2"
+    parameter_validation:
+      - rule: "hse_frequency_range"
+        description: "HSE frequency must be within 16-48 MHz"
+        condition: "HSE_FREQ >= 16000000 AND HSE_FREQ <= 48000000"
+      - rule: "lse_frequency_exact"
+        description: "LSE frequency must be exactly 32.768 kHz"
+        condition: "LSE_FREQ == 32768"
+    parameter:
+      HSE_FREQ: 25000000
+      LSE_FREQ: 32768
+      FREQUENCY: 400000000
+      PLL_COUNT: 4
+      CLOCK_SOURCE_COUNT: 5
+      CSS_ENABLE: true
+      CLOCK_SECURITY_SYSTEM: true
+      RESET_CONTROLLER_COUNT: 3
+      RESET_SOURCE_COUNT: 8
+      RESET_TARGET_COUNT: 15
+    port:
+      CLK:
+        link: rcc_clk
+      RESET_N:
+        link: rcc_rst_n
+      # Clock Sources
+      CLK_HSE:
+        link: clk_hse
+      CLK_LSE:
+        link: clk_lse
+      CLK_HSI:
+        link: clk_hsi
+      CLK_LSI:
+        link: clk_lsi
+      CLK_CSI:
+        link: clk_csi
+      # PLL Outputs
+      PLL1_P:
+        link: pll1_p
+      PLL1_Q:
+        link: pll1_q
+      PLL1_R:
+        link: pll1_r
+      PLL2_P:
+        link: pll2_p
+      PLL2_Q:
+        link: pll2_q
+      PLL2_R:
+        link: pll2_r
+      PLL3_P:
+        link: pll3_p
+      PLL3_Q:
+        link: pll3_q
+      PLL3_R:
+        link: pll3_r
+      PLL4_P:
+        link: pll4_p
+      PLL4_Q:
+        link: pll4_q
+      PLL4_R:
+        link: pll4_r
+      # Clock Enable Controls
+      CLK_EN_MPU:
+        link: clk_en_mpu
+      CLK_EN_MCU:
+        link: clk_en_mcu
+      CLK_EN_AXI:
+        link: clk_en_axi
+      CLK_EN_AHB:
+        link: clk_en_ahb
+      CLK_EN_APB:
+        link: clk_en_apb
+      CLK_EN_GPU:
+        link: clk_en_gpu
+      CLK_EN_NPU:
+        link: clk_en_npu
+      CLK_EN_DDR:
+        link: clk_en_ddr
+      CLK_EN_ETH:
+        link: clk_en_eth
+      CLK_EN_USB:
+        link: clk_en_usb
+      CLK_EN_PCIE:
+        link: clk_en_pcie
+      # Reset Control Interface - Connected to Reset Controllers
+      RESET_REQ_POR:
+        link: por_rst_n
+      RESET_REQ_BOR:
+        link: bor_rst_n
+      RESET_REQ_NRST:
+        link: nrst_n
+      RESET_REQ_IWDG:
+        link: iwdg_rst_n
+      RESET_REQ_WWDG:
+        link: wwdg_rst_n
+      RESET_REQ_SW:
+        link: sw_rst_n
+      RESET_REQ_CSS:
+        link: css_rst_n
+      # Reset Status from Controllers
+      RESET_STATUS_CPU:
+        link: cpu_rst_n
+      RESET_STATUS_MCU:
+        link: mcu_rst_n
+      RESET_STATUS_M0:
+        link: m0_rst_n
+      RESET_STATUS_SYS:
+        link: sys_rst_n
+      RESET_STATUS_MEM:
+        link: mem_rst_n
+      RESET_STATUS_PERIPH:
+        link: periph_rst_n
+      # Clock Security System
+      CSS_HSE:
+        link: css_hse
+      CSS_LSE:
+        link: css_lse
+      CSS_PLL:
+        link: css_pll
+      CSS_SYS:
+        link: css_system
+      CSS_HSEF:
+        link: css_hse_flag
+      CSS_LSEF:
+        link: css_lse_flag
+      CSS_PLLF:
+        link: css_pll_flag
+      # Reset Reason Recording
+      RESET_REASON:
+        link: reset_reason
+      RESET_REASON_VALID:
+        link: reason_valid
+      RESET_REASON_CLEAR:
+        link: reason_clear
+      RESET_SEQ_DONE:
+        link: reset_sequence_done
+  
+  pwr:
+    module: pwr
+    parameter:
+      FREQUENCY: 400000000
+      POWER_DOMAIN_COUNT: 5
+      LOW_POWER_MODES: 4
+    port:
+      CLK:
+        link: pwr_clk
+      RESET_N:
+        link: pwr_rst_n
+  
+  syscfg:
+    module: syscfg
+    parameter:
+      FREQUENCY: 200000000
+      EXTI_COUNT: 128
+      BOOT_MODE_COUNT: 8
+    port:
+      CLK:
+        link: syscfg_clk
+      RESET_N:
+        link: syscfg_rst_n
+  
+  dbgmcu:
+    module: dbgmcu
+    parameter:
+      FREQUENCY: 200000000
+      DEBUG_PORT_COUNT: 3
+    port:
+      CLK:
+        link: dbgmcu_clk
+      RESET_N:
+        link: dbgmcu_rst_n
+  
+  flash:
+    module: flash
+    parameter_validation:
+      - rule: "flash_size_alignment"
+        description: "Flash size must be power of 2 and >= 128KB"
+        condition: "is_power_of_2(FLASH_SIZE) AND FLASH_SIZE >= 131072"
+      - rule: "page_size_alignment"
+        description: "Flash page size must be power of 2 and >= 256 bytes"
+        condition: "is_power_of_2(FLASH_PAGE_SIZE) AND FLASH_PAGE_SIZE >= 256"
+    parameter:
+      FREQUENCY: 200000000
+      FLASH_SIZE: 4194304
+      FLASH_PAGE_SIZE: 8192
+      SECTOR_COUNT: 128
+    port:
+      CLK:
+        link: flash_clk
+      RESET_N:
+        link: flash_rst_n
+  
+  temp:
+    module: temp
+    parameter:
+      FREQUENCY: 100000000
+      SENSOR_COUNT: 2
+    port:
+      CLK:
+        link: temp_clk
+      RESET_N:
+        link: temp_rst_n
+  
+  # GPIO Ports
+  gpio_a:
+    module: gpio
+    version: "v2.1"
+    parameter_validation:
+      - rule: "port_id_valid"
+        description: "GPIO port ID must be A-H"
+        condition: "PORT_ID IN ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']"
+      - rule: "af_count_range"
+        description: "Alternate function count must be 8-16"
+        condition: "AF_COUNT >= 8 AND AF_COUNT <= 16"
+    parameter:
+      FREQUENCY: 200000000
+      PIN_COUNT: 16
+      PORT_ID: A
+      AF_COUNT: 16
+    port:
+      CLK:
+        link: gpio_clk
+      RESET_N:
+        link: gpio_rst_n
+      CFG:
+        link: gpio_a_cfg
+      DATA:
+        link: gpio_a_data
+  
+  gpio_b:
+    module: gpio
+    version: "v2.1"
+    parameter_validation:
+      - rule: "port_id_valid"
+        description: "GPIO port ID must be A-H"
+        condition: "PORT_ID IN ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']"
+      - rule: "af_count_range"
+        description: "Alternate function count must be 8-16"
+        condition: "AF_COUNT >= 8 AND AF_COUNT <= 16"
+    parameter:
+      FREQUENCY: 200000000
+      PIN_COUNT: 16
+      PORT_ID: B
+      AF_COUNT: 16
+    port:
+      CLK:
+        link: gpio_clk
+      RESET_N:
+        link: gpio_rst_n
+      CFG:
+        link: gpio_b_cfg
+      DATA:
+        link: gpio_b_data
+  
+  gpio_c:
+    module: gpio
+    parameter:
+      FREQUENCY: 200000000
+      PIN_COUNT: 16
+      PORT_ID: C
+      AF_COUNT: 16
+    port:
+      CLK:
+        link: gpio_clk
+      RESET_N:
+        link: gpio_rst_n
+      CFG:
+        link: gpio_c_cfg
+      DATA:
+        link: gpio_c_data
+  
+  gpio_d:
+    module: gpio
+    parameter:
+      FREQUENCY: 200000000
+      PIN_COUNT: 16
+      PORT_ID: D
+      AF_COUNT: 16
+    port:
+      CLK:
+        link: gpio_clk
+      RESET_N:
+        link: gpio_rst_n
+      CFG:
+        link: gpio_d_cfg
+      DATA:
+        link: gpio_d_data
+  
+  gpio_e:
+    module: gpio
+    parameter:
+      FREQUENCY: 200000000
+      PIN_COUNT: 16
+      PORT_ID: E
+      AF_COUNT: 16
+    port:
+      CLK:
+        link: gpio_clk
+      RESET_N:
+        link: gpio_rst_n
+      CFG:
+        link: gpio_e_cfg
+      DATA:
+        link: gpio_e_data
+  
+  gpio_f:
+    module: gpio
+    parameter:
+      FREQUENCY: 200000000
+      PIN_COUNT: 16
+      PORT_ID: F
+      AF_COUNT: 16
+    port:
+      CLK:
+        link: gpio_clk
+      RESET_N:
+        link: gpio_rst_n
+      CFG:
+        link: gpio_f_cfg
+      DATA:
+        link: gpio_f_data
+  
+  gpio_g:
+    module: gpio
+    parameter:
+      FREQUENCY: 200000000
+      PIN_COUNT: 16
+      PORT_ID: G
+      AF_COUNT: 16
+    port:
+      CLK:
+        link: gpio_clk
+      RESET_N:
+        link: gpio_rst_n
+      CFG:
+        link: gpio_g_cfg
+      DATA:
+        link: gpio_g_data
+  
+  gpio_h:
+    module: gpio
+    parameter:
+      FREQUENCY: 200000000
+      PIN_COUNT: 16
+      PORT_ID: H
+      AF_COUNT: 16
+    port:
+      CLK:
+        link: gpio_clk
+      RESET_N:
+        link: gpio_rst_n
+      CFG:
+        link: gpio_h_cfg
+      DATA:
+        link: gpio_h_data
+  
+  # External Interrupt Controller
+  exti:
+    module: exti
+    parameter_validation:
+      - rule: "line_count_range"
+        description: "External interrupt line count must be 32-256"
+        condition: "LINE_COUNT >= 32 AND LINE_COUNT <= 256"
+      - rule: "gpio_port_count_range"
+        description: "GPIO port count must be 1-16"
+        condition: "GPIO_PORT_COUNT >= 1 AND GPIO_PORT_COUNT <= 16"
+    parameter:
+      FREQUENCY: 200000000
+      LINE_COUNT: 128
+      GPIO_PORT_COUNT: 8
+    port:
+      CLK:
+        link: exti_clk
+      RESET_N:
+        link: exti_rst_n
+  
+  # I2C Controllers
+  i2c1:
+    module: i2c
+    parameter_validation:
+      - rule: "bus_speed_range"
+        description: "I2C bus speed must be 100kHz, 400kHz, or 1MHz"
+        condition: "BUS_SPEED IN [100000, 400000, 1000000]"
+      - rule: "address_mode_valid"
+        description: "Address mode must be 7 or 10 bit"
+        condition: "ADDRESS_MODE IN [7, 10]"
+    parameter:
+      FREQUENCY: 100000000
+      BUS_SPEED: 400000
+      ADDRESS_MODE: 7
+    port:
+      CLK:
+        link: i2c_clk
+      RESET_N:
+        link: i2c_rst_n
+  
+  i2c2:
+    module: i2c
+    parameter:
+      FREQUENCY: 100000000
+      BUS_SPEED: 400000
+      ADDRESS_MODE: 7
+    port:
+      CLK:
+        link: i2c_clk
+      RESET_N:
+        link: i2c_rst_n
+  
+  i2c3:
+    module: i2c
+    parameter:
+      FREQUENCY: 100000000
+      BUS_SPEED: 400000
+      ADDRESS_MODE: 7
+    port:
+      CLK:
+        link: i2c_clk
+      RESET_N:
+        link: i2c_rst_n
+  
+  i2c4:
+    module: i2c
+    parameter:
+      FREQUENCY: 100000000
+      BUS_SPEED: 400000
+      ADDRESS_MODE: 7
+    port:
+      CLK:
+        link: i2c_clk
+      RESET_N:
+        link: i2c_rst_n
+  
+  i2c5:
+    module: i2c
+    parameter:
+      FREQUENCY: 100000000
+      BUS_SPEED: 400000
+      ADDRESS_MODE: 7
+    port:
+      CLK:
+        link: i2c_clk
+      RESET_N:
+        link: i2c_rst_n
+  
+  # SPI Controllers
+  spi1:
+    module: spi
+    parameter_validation:
+      - rule: "max_speed_range"
+        description: "SPI maximum speed must be <= 50MHz"
+        condition: "MAX_SPEED <= 50000000"
+      - rule: "data_width_valid"
+        description: "SPI data width must be 4-32 bits"
+        condition: "DATA_WIDTH >= 4 AND DATA_WIDTH <= 32"
+    parameter:
+      FREQUENCY: 200000000
+      MAX_SPEED: 50000000
+      DATA_WIDTH: 8
+    port:
+      CLK:
+        link: spi_clk
+      RESET_N:
+        link: spi_rst_n
+  
+  spi2:
+    module: spi
+    parameter:
+      FREQUENCY: 200000000
+      MAX_SPEED: 50000000
+      DATA_WIDTH: 8
+    port:
+      CLK:
+        link: spi_clk
+      RESET_N:
+        link: spi_rst_n
+  
+  spi3:
+    module: spi
+    parameter:
+      FREQUENCY: 200000000
+      MAX_SPEED: 50000000
+      DATA_WIDTH: 8
+    port:
+      CLK:
+        link: spi_clk
+      RESET_N:
+        link: spi_rst_n
+  
+  spi4:
+    module: spi
+    parameter:
+      FREQUENCY: 200000000
+      MAX_SPEED: 50000000
+      DATA_WIDTH: 8
+    port:
+      CLK:
+        link: spi_clk
+      RESET_N:
+        link: spi_rst_n
+  
+  spi5:
+    module: spi
+    parameter:
+      FREQUENCY: 200000000
+      MAX_SPEED: 50000000
+      DATA_WIDTH: 8
+    port:
+      CLK:
+        link: spi_clk
+      RESET_N:
+        link: spi_rst_n
+  
+  # USART/UART Controllers
+  usart1:
+    module: usart
+    parameter:
+      FREQUENCY: 200000000
+      MAX_SPEED: 12500000
+      DATA_WIDTH: 8
+      FLOW_CONTROL: true
+    port:
+      CLK:
+        link: usart_clk
+      RESET_N:
+        link: usart_rst_n
+  
+  usart2:
+    module: usart
+    parameter:
+      FREQUENCY: 200000000
+      MAX_SPEED: 12500000
+      DATA_WIDTH: 8
+      FLOW_CONTROL: true
+    port:
+      CLK:
+        link: usart_clk
+      RESET_N:
+        link: usart_rst_n
+  
+  usart3:
+    module: usart
+    parameter:
+      FREQUENCY: 200000000
+      MAX_SPEED: 12500000
+      DATA_WIDTH: 8
+      FLOW_CONTROL: true
+    port:
+      CLK:
+        link: usart_clk
+      RESET_N:
+        link: usart_rst_n
+  
+  uart4:
+    module: uart
+    parameter:
+      FREQUENCY: 200000000
+      MAX_SPEED: 12500000
+      DATA_WIDTH: 8
+    port:
+      CLK:
+        link: uart_clk
+      RESET_N:
+        link: uart_rst_n
+  
+  uart5:
+    module: uart
+    parameter:
+      FREQUENCY: 200000000
+      MAX_SPEED: 12500000
+      DATA_WIDTH: 8
+    port:
+      CLK:
+        link: uart_clk
+      RESET_N:
+        link: uart_rst_n
+  
+  usart6:
+    module: usart
+    parameter:
+      FREQUENCY: 200000000
+      MAX_SPEED: 12500000
+      DATA_WIDTH: 8
+      FLOW_CONTROL: true
+    port:
+      CLK:
+        link: usart_clk
+      RESET_N:
+        link: usart_rst_n
+  
+  uart7:
+    module: uart
+    parameter:
+      FREQUENCY: 200000000
+      MAX_SPEED: 12500
+      DATA_WIDTH: 8
+    port:
+      CLK:
+        link: uart_clk
+      RESET_N:
+        link: uart_rst_n
+  
+  uart8:
+    module: uart
+    parameter:
+      FREQUENCY: 200000000
+      MAX_SPEED: 12500000
+      DATA_WIDTH: 8
+    port:
+      CLK:
+        link: uart_clk
+      RESET_N:
+        link: uart_rst_n
+  
+  # Communication Interfaces
+  eth:
+    module: eth_mac
+    parameter:
+      FREQUENCY: 250000000
+      PHY_COUNT: 2
+      SPEED: 1000
+    port:
+      CLK:
+        link: eth_clk
+      RESET_N:
+        link: eth_rst_n
+  
+  usb:
+    module: usb_ctrl
+    parameter:
+      FREQUENCY: 600000000
+      PORT_COUNT: 1
+      SPEED: "USB3.0"
+    port:
+      CLK:
+        link: usb_clk
+      RESET_N:
+        link: usb_rst_n
+  
+  sdmmc1:
+    module: sdmmc
+    parameter:
+      FREQUENCY: 200000000
+      BUS_WIDTH: 4
+      SPEED: 52000000
+    port:
+      CLK:
+        link: sdmmc_clk
+      RESET_N:
+        link: sdmmc_rst_n
+  
+  sdmmc2:
+    module: sdmmc
+    parameter:
+      FREQUENCY: 200000000
+      BUS_WIDTH: 4
+      SPEED: 52000000
+    port:
+      CLK:
+        link: sdmmc_clk
+      RESET_N:
+        link: sdmmc_rst_n
+  
+  rtc:
+    module: rtc
+    parameter:
+      FREQUENCY: 32768
+      ALARM_COUNT: 2
+    port:
+      CLK:
+        link: clk_rtc
+      RESET_N:
+        link: rst_rtc
+  
+  lptim1:
+    module: lptim
+    parameter:
+      FREQUENCY: 32000
+      COUNTER_WIDTH: 16
+    port:
+      CLK:
+        link: clk_lptim1
+      RESET_N:
+        link: rst_lptim1
+  
+  lptim2:
+    module: lptim
+    parameter:
+      FREQUENCY: 32000
+      COUNTER_WIDTH: 16
+    port:
+      CLK:
+        link: clk_lptim2
+      RESET_N:
+        link: rst_lptim2
+  
+  # System Status and Health Monitor
+  system_status:
+    module: system_status
+    parameter:
+      FREQUENCY: 100000000
+      STATUS_VECTOR_WIDTH: 64
+    port:
+      CLK:
+        link: clk_apb
+      RESET_N:
+        link: rst_sys
+  
+  health_monitor:
+    module: health_monitor
+    parameter:
+      FREQUENCY: 100000000
+      MONITOR_POINT_COUNT: 16
+    port:
+      CLK:
+        link: clk_apb
+      RESET_N:
+        link: rst_sys
+  
+  # Clock Sources (Enhanced with Clock Controller Interface)
+  osc_hse:
+    module: osc_hse
+    parameter:
+      FREQUENCY: 16000000
+      RANGE: "16-48MHz"
+      CSS_ENABLE: true
+    port:
+      OUT:
+        link: clk_osc_hse
+      READY:
+        link: osc_hse_ready
+      CSS:
+        link: css_hse
+      CSSF:
+        link: css_hse_flag
+  
+  osc_lse:
+    module: osc_lse
+    parameter:
+      FREQUENCY: 32768
+      CSS_ENABLE: true
+    port:
+      OUT:
+        link: clk_osc_lse
+      READY:
+        link: osc_lse_ready
+      CSS:
+        link: css_lse
+      CSSF:
+        link: css_lse_flag
+  
+  osc_hsi:
+    module: osc_hsi
+    parameter:
+      FREQUENCY: 64000000
+      TRIM_ENABLE: true
+    port:
+      OUT:
+        link: clk_osc_hsi
+      READY:
+        link: osc_hsi_ready
+      TRIM:
+        link: hsi_trim
+  
+  osc_lsi:
+    module: osc_lsi
+    parameter:
+      FREQUENCY: 32000
+    port:
+      OUT:
+        link: clk_osc_lsi
+      READY:
+        link: osc_lsi_ready
+  
+  osc_csi:
+    module: osc_csi
+    parameter:
+      FREQUENCY: 4000000
+    port:
+      OUT:
+        link: clk_osc_csi
+      READY:
+        link: osc_csi_ready
+  
+  # Enhanced Clock Divider with Clock Controller Interface
+  clk_divider:
+    module: clock_divider
+    parameter:
+      INPUT_COUNT: 13
+      OUTPUT_COUNT: 20
+      PROGRAMMABLE: true
+    port:
+      # PLL Inputs from Clock Controller
+      PLL1_P:
+        link: pll1_p
+      PLL1_Q:
+        link: pll1_q
+      PLL1_R:
+        link: pll1_r
+      PLL2_P:
+        link: pll2_p
+      PLL2_Q:
+        link: pll2_q
+      PLL2_R:
+        link: pll2_r
+      PLL3_P:
+        link: pll3_p
+      PLL3_Q:
+        link: pll3_q
+      PLL3_R:
+        link: pll3_r
+      PLL4_P:
+        link: pll4_p
+      PLL4_Q:
+        link: pll4_q
+      PLL4_R:
+        link: pll4_r
+      # Oscillator Inputs
+      CLK_HSI:
+        link: clk_osc_hsi
+      CLK_CSI:
+        link: clk_osc_csi
+      CLK_LSI:
+        link: clk_osc_lsi
+      # Clock Outputs to Subsystems
+      CLK_MPU:
+        link: clk_mpu
+      CLK_MCU:
+        link: clk_mcu
+      CLK_AXI:
+        link: clk_axi
+      CLK_AHB:
+        link: clk_ahb
+      CLK_APB:
+        link: clk_apb
+      CLK_GPU:
+        link: clk_gpu
+      CLK_NPU:
+        link: clk_npu
+      CLK_DDR:
+        link: clk_ddr
+      CLK_ETH:
+        link: clk_eth
+      CLK_USB:
+        link: clk_usb
+      CLK_PCIE:
+        link: clk_pcie
+      CLK_VENC:
+        link: clk_venc
+      CLK_VDEC:
+        link: clk_vdec
+      CLK_SYSTICK:
+        link: clk_systick
+      CLK_RTC:
+        link: clk_rtc
+      CLK_LPTIM1:
+        link: clk_lptim1
+      CLK_LPTIM2:
+        link: clk_lptim2
+      CLK_TIM1:
+        link: clk_tim1
+      CLK_TIM2:
+        link: clk_tim2
+      CLK_TIM3:
+        link: clk_tim3
+      CLK_TIM4:
+        link: clk_tim4
+      CLK_HRTIM:
+        link: clk_hrtim
+  
+
+# Bus System Definitions
+# Merged from bus.yaml
+
+bus:
+  # Memory System Buses
+  # DDR AXI Bus
+  ddr_axi:
+    - instance: axi_interconnect
+      port: ddr_master
+    - instance: ddr_ctrl
+      port: axi_slave
+  
+  # SRAM AHB Bus
+  sram_ahb:
+    - instance: ahb_interconnect
+      port: sram_master
+    - instance: sram1
+      port: ahb_slave
+    - instance: sram2
+      port: ahb_slave
+    - instance: sram3
+      port: ahb_slave
+    - instance: sram4
+      port: ahb_slave
+    - instance: retsram
+      port: ahb_slave
+    - instance: flash_ctrl
+      port: ahb_slave
+
+  # High-Speed Peripheral AXI Buses
+  eth_axi:
+    - instance: axi_interconnect
+      port: eth_master
+    - instance: eth
+      port: axi_slave
+  
+  usb_axi:
+    - instance: axi_interconnect
+      port: usb_master
+    - instance: usb
+      port: axi_slave
+  
+  pcie_axi:
+    - instance: axi_interconnect
+      port: pcie_master
+    - instance: pcie
+      port: axi_slave
+
+  # Storage Interface AHB Bus
+  sdmmc_ahb:
+    - instance: ahb_interconnect
+      port: sdmmc_master
+    - instance: sdmmc1
+      port: ahb_slave
+    - instance: sdmmc2
+      port: ahb_slave
+
+  # Analog Peripheral APB Buses
+  adc_apb:
+    - instance: apb_interconnect
+      port: adc_slave
+    - instance: adc1_cfg
+      port: cfg
+    - instance: adc2_cfg
+      port: cfg
+  
+  dac_apb:
+    - instance: apb_interconnect
+      port: dac_slave
+    - instance: dac_cfg
+      port: cfg
+
+  # Timer APB Buses
+  timer_apb:
+    - instance: apb_interconnect
+      port: timer_slave
+    - instance: tim1_cfg
+      port: cfg
+    - instance: tim2_cfg
+      port: cfg
+    - instance: tim3_cfg
+      port: cfg
+    - instance: tim4_cfg
+      port: cfg
+    - instance: tim5_cfg
+      port: cfg
+    - instance: tim6_cfg
+      port: cfg
+    - instance: tim7_cfg
+      port: cfg
+    - instance: tim8_cfg
+      port: cfg
+    - instance: tim9_cfg
+      port: cfg
+    - instance: tim10_cfg
+      port: cfg
+    - instance: tim11_cfg
+      port: cfg
+    - instance: tim12_cfg
+      port: cfg
+    - instance: tim13_cfg
+      port: cfg
+    - instance: tim14_cfg
+      port: cfg
+    - instance: tim15_cfg
+      port: cfg
+    - instance: tim16_cfg
+      port: cfg
+    - instance: tim17_cfg
+      port: cfg
+
+  # Low-Power Timer APB Bus
+  lptim_apb:
+    - instance: apb_interconnect
+      port: lptim_slave
+    - instance: lptim1_cfg
+      port: cfg
+    - instance: lptim2_cfg
+      port: cfg
+
+  # High-Resolution Timer APB Bus
+  hrtim_apb:
+    - instance: apb_interconnect
+      port: hrtim_slave
+    - instance: hrtim_cfg
+      port: cfg
+
+  # DMA APB Bus
+  dma_apb:
+    - instance: apb_interconnect
+      port: dma_slave
+    - instance: dma1_cfg
+      port: cfg
+    - instance: dma2_cfg
+      port: cfg
+    - instance: bdma_cfg
+      port: cfg
+    - instance: mdma_cfg
+      port: cfg
+
+  # GPIO APB Bus
+  gpio_apb:
+    - instance: apb_interconnect
+      port: gpio_slave
+    - instance: gpio_a_cfg
+      port: cfg
+    - instance: gpio_b_cfg
+      port: cfg
+    - instance: gpio_c_cfg
+      port: cfg
+    - instance: gpio_d_cfg
+      port: cfg
+    - instance: gpio_e_cfg
+      port: cfg
+    - instance: gpio_f_cfg
+      port: cfg
+    - instance: gpio_g_cfg
+      port: cfg
+    - instance: gpio_h_cfg
+      port: cfg
+
+  # Communication Interface APB Buses
+  i2c_apb:
+    - instance: apb_interconnect
+      port: i2c_slave
+    - instance: i2c1_cfg
+      port: cfg
+    - instance: i2c2_cfg
+      port: cfg
+    - instance: i2c3_cfg
+      port: cfg
+    - instance: i2c4_cfg
+      port: cfg
+    - instance: i2c5_cfg
+      port: cfg
+
+  spi_apb:
+    - instance: apb_interconnect
+      port: spi_slave
+    - instance: spi1_cfg
+      port: cfg
+    - instance: spi2_cfg
+      port: cfg
+    - instance: spi3_cfg
+      port: cfg
+    - instance: spi4_cfg
+      port: cfg
+    - instance: spi5_cfg
+      port: cfg
+
+  usart_apb:
+    - instance: apb_interconnect
+      port: usart_slave
+    - instance: usart1_cfg
+      port: cfg
+    - instance: usart2_cfg
+      port: cfg
+    - instance: usart3_cfg
+      port: cfg
+    - instance: uart4_cfg
+      port: cfg
+    - instance: uart5_cfg
+      port: cfg
+    - instance: usart6_cfg
+      port: cfg
+    - instance: uart7_cfg
+      port: cfg
+    - instance: uart8_cfg
+      port: cfg
+
+  # CAN APB Bus
+  can_apb:
+    - instance: apb_interconnect
+      port: can_slave
+    - instance: can1_cfg
+      port: cfg
+    - instance: can2_cfg
+      port: cfg
+
+  # System Configuration APB Bus
+  syscfg_apb:
+    - instance: syscfg
+      port: cfg
+    - instance: flash
+      port: cfg
+    - instance: pwr
+      port: cfg
+    - instance: apb_interconnect
+      port: slave_syscfg
+
+  # Debug APB Bus
+  debug_apb:
+    - instance: dbgmcu
+      port: cfg
+    - instance: apb_interconnect
+      port: slave_debug
+
+  # Power Management APB Bus
+  pwr_apb:
+    - instance: pwr
+      port: cfg
+    - instance: apb_interconnect
+      port: pwr_slave
+
+  # Temperature Sensor APB Bus
+  temp_apb:
+    - instance: temp
+      port: cfg
+    - instance: apb_interconnect
+      port: temp_slave
+
+  # System Status Bus
+  system_status_bus:
+    - instance: syscfg
+      port: status
+    - instance: apb_interconnect
+      port: syscfg_slave
+
+  # System Health Monitor Bus
+  health_monitor_bus:
+    - instance: health_monitor
+      port: cfg
+    - instance: apb_interconnect
+      port: health_slave
+
+  # Reset Control Bus
+  reset_control_bus:
+    - instance: rcc
+      port: reset_cfg
+    - instance: apb_interconnect
+      port: reset_slave
+
+  # Reset Status Monitor Bus
+  reset_status_bus:
+    - instance: main_reset_ctrl
+      port: status
+    - instance: apb_interconnect
+      port: reset_status_slave
+
+# Reset Controllers
+reset:
+  # Main System Reset Controller
+  - name: main_reset_ctrl
+    test_enable: test_en
+    source:
+      por_rst_n:
+        active: low
+        description: "Power-on reset (root reset)"
+      nrst_n:
+        active: low
+        description: "External reset pin"
+      bor_rst_n:
+        active: low
+        description: "Brown-out reset"
+      iwdg_rst_n:
+        active: low
+        description: "Independent watchdog reset"
+      wwdg_rst_n:
+        active: low
+        description: "Window watchdog reset"
+      sw_rst_n:
+        active: low
+        description: "Software reset from RCC"
+      css_rst_n:
+        active: low
+        description: "Clock security system reset"
+    target:
+      # CPU Domain Resets
+      cpu_rst_n:
+        active: low
+        description: "Cortex-A35 cluster reset"     
+          link:
+            por_rst_n:
+              async:
+                clock: clk_mpu
+                stage: 4
+            nrst_n:
+              async:
+                clock: clk_mpu
+                stage: 4
+            sw_rst_n:
+              async:
+                clock: clk_mpu
+                stage: 2
+        mcu_rst_n:
+          active: low
+          description: "Cortex-M33 subsystem reset"
+          link:
+            por_rst_n:
+              async:
+                clock: clk_mcu
+                stage: 4
+            nrst_n:
+              async:
+                clock: clk_mcu
+                stage: 4
+            sw_rst_n:
+              async:
+                clock: clk_mcu
+                stage: 2
+        m0_rst_n:
+          active: low
+          description: "Cortex-M0+ SmartRun domain reset"
+          link:
+            por_rst_n:
+              async:
+                clock: clk_m0plus
+                stage: 4
+            sw_rst_n:
+              async:
+                clock: clk_m0plus
+                stage: 2
+        # System Infrastructure Resets
+        sys_rst_n:
+          active: low
+          description: "System infrastructure reset"
+          link:
+            por_rst_n:
+              direct: ~
+            bor_rst_n:
+              direct: ~
+            css_rst_n:
+              direct: ~
+        # Peripheral Domain Resets
+        periph_rst_n:
+          active: low
+          description: "Peripheral domain reset"
+          link:
+            por_rst_n:
+              async:
+                clock: clk_apb
+                stage: 2
+            nrst_n:
+              async:
+                clock: clk_apb
+                stage: 2
+            sw_rst_n:
+              async:
+                clock: clk_apb
+                stage: 2
+        # Memory Domain Resets
+        mem_rst_n:
+          active: low
+          description: "Memory subsystem reset"
+          link:
+            por_rst_n:
+              async:
+                clock: clk_axi
+                stage: 3
+            sw_rst_n:
+              async:
+                clock: clk_axi
+                stage: 2

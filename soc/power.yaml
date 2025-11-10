@@ -1,0 +1,257 @@
+# Power Management Definitions for SoC Architecture
+# Extracted from Arch.yaml
+
+# Power Management Configuration
+power_management:
+  description: "Integration with power management"
+  low_power_modes:
+    sleep:
+      description: "CPU clock stopped, peripherals running"
+      affected_clocks: [clk_mpu, clk_mcu]
+      
+    stop:
+      description: "All PLLs stopped, oscillators running"
+      affected_clocks: [clk_mpu, clk_mcu, clk_axi, clk_ahb, clk_apb]
+      
+    standby:
+      description: "Only LSE/LSI running"
+      affected_clocks: [clk_mpu, clk_mcu, clk_axi, clk_ahb, clk_apb, pll1, pll2, pll3, pll4]
+      
+    shutdown:
+      description: "All clocks stopped"
+      affected_clocks: "all"
+
+# Power Control Signals
+net:
+  # 电源控制信号
+  cpu_power_req:
+    driver: instance.cortexa35.PWR_REQ
+  cpu_power_ack:
+    driver: instance.pwr.CPU_ACK
+  gpu_power_req:
+    driver: instance.gpu.PWR_REQ
+  gpu_power_ack:
+    driver: instance.pwr.GPU_ACK
+  npu_power_req:
+    driver: instance.npu.PWR_REQ
+  npu_power_ack:
+    driver: instance.pwr.NPU_ACK
+  ddr_power_req:
+    driver: instance.ddr.PWR_REQ
+  ddr_power_ack:
+    driver: instance.pwr.DDR_ACK
+  periph_power_req:
+    driver: instance.pwr.PERIPH_REQ
+  periph_power_ack:
+    driver: instance.pwr.PERIPH_ACK
+  
+  # 电源状态信号
+  cpu_power_state:
+    bits: 3
+    driver: instance.pwr.CPU_STATE0,instance.pwr.CPU_STATE1,instance.pwr.CPU_STATE2
+  gpu_power_state:
+    bits: 2
+    driver: instance.pwr.GPU_STATE0,instance.pwr.GPU_STATE1
+  npu_power_state:
+    bits: 2
+    driver: instance.pwr.NPU_STATE0,instance.pwr.NPU_STATE1
+  ddr_power_state:
+    bits: 2
+    driver: instance.pwr.DDR_STATE0,instance.pwr.DDR_STATE1
+  system_power_state:
+    bits: 4
+    driver: instance.pwr.SYS_STATE0,instance.pwr.SYS_STATE1,instance.pwr.SYS_STATE2,instance.pwr.SYS_STATE3
+  
+  # 低功耗模式信号
+  sleep_mode:
+    driver: instance.pwr.SLEEP
+  stop_mode:
+    driver: instance.pwr.STOP
+  standby_mode:
+    driver: instance.pwr.STANDBY
+  shutdown_mode:
+    driver: instance.pwr.SHUTDOWN
+  retention_mode:
+    driver: instance.pwr.RETENTION
+  
+  # 电源隔离信号
+  cpu_isolation:
+    driver: instance.pwr.CPU_ISO
+  gpu_isolation:
+    driver: instance.pwr.GPU_ISO
+  npu_isolation:
+    driver: instance.pwr.NPU_ISO
+  ddr_isolation:
+    driver: instance.pwr.DDR_ISO
+  periph_isolation:
+    driver: instance.pwr.PERIPH_ISO
+  
+  # 电源序列控制
+  power_sequence:
+    bits: 8
+    driver: instance.pwr.SEQ0..instance.pwr.SEQ7
+  power_sequence_done:
+    driver: instance.pwr.SEQ_DONE
+  power_sequence_error:
+    driver: instance.pwr.SEQ_ERR
+  
+  # 温度传感器接口
+  temp_sensor:
+    driver: instance.temp.TEMP
+  temp_alarm:
+    driver: instance.temp.ALARM
+  temp_shutdown:
+    driver: instance.temp.SHUTDOWN
+
+  # 电源系统就绪状态
+  power_system_ready:
+    driver: comb.power_system_final
+  power_domain_ready:
+    driver: comb.power_domain_final
+  low_power_ready:
+    driver: comb.low_power_final
+
+# Power Management APB Bus
+bus:
+  # 电源管理APB总线
+  pwr_apb:
+    - instance: instance.pwr
+      port: cfg
+    - instance: instance.apb_interconnect
+      port: pwr_slave
+  
+  # 温度传感器APB总线
+  temp_apb:
+    - instance: instance.temp
+      port: cfg
+    - instance: instance.apb_interconnect
+      port: temp_slave
+
+# Power-related Combinational Logic
+comb:
+  # 电源就绪状态
+  core_power_ready:
+    expr: vdd_core & vdd_cpu & vdd_gpu & vdd_npu & vdd_ddr & vdd_io
+  analog_power_ready:
+    expr: vdd_adc & vdd_dac & vdd_vref
+  peripheral_power_ready:
+    expr: vdd_usb & vdd_sd & vdd_can & vdd_pll
+  backup_power_ready:
+    expr: vdd_rtc & vdd_bkp
+  all_power_ready:
+    expr: core_power_ready & analog_power_ready & peripheral_power_ready & backup_power_ready
+  
+  # 电源监控状态
+  pvd_active:
+    expr: pvd_out
+  bor_active:
+    expr: bordet_out
+  avd_active:
+    expr: avd_out
+  vbat_low:
+    expr: vbat_mon < 0x800
+  power_fault:
+    expr: pvd_active | bor_active | avd_active | vbat_low
+  
+  # 电源控制状态
+  cpu_power_on:
+    expr: cpu_power_req & cpu_power_ack
+  gpu_power_on:
+    expr: gpu_power_req & gpu_power_ack
+  npu_power_on:
+    expr: npu_power_req & npu_power_ack
+  ddr_power_on:
+    expr: ddr_power_req & ddr_power_ack
+  periph_power_on:
+    expr: periph_power_req & periph_power_ack
+  all_power_on:
+    expr: cpu_power_on & gpu_power_on & npu_power_on & ddr_power_on & periph_power_on
+  
+  # 低功耗模式状态
+  in_sleep_mode:
+    expr: sleep_mode && !stop_mode && !standby_mode && !shutdown_mode
+  in_stop_mode:
+    expr: stop_mode && !standby_mode && !shutdown_mode
+  in_standby_mode:
+    expr: standby_mode && !shutdown_mode
+  in_shutdown_mode:
+    expr: shutdown_mode
+  in_retention_mode:
+    expr: retention_mode
+  low_power_active:
+    expr: in_sleep_mode || in_stop_mode || in_standby_mode || in_shutdown_mode || in_retention_mode
+  
+  # 电源隔离状态
+  cpu_isolated:
+    expr: cpu_isolation && (in_stop_mode || in_standby_mode || in_shutdown_mode)
+  gpu_isolated:
+    expr: gpu_isolation && (in_stop_mode || in_standby_mode || in_shutdown_mode)
+  npu_isolated:
+    expr: npu_isolation && (in_stop_mode || in_standby_mode || in_shutdown_mode)
+  ddr_isolated:
+    expr: ddr_isolation && (in_standby_mode || in_shutdown_mode)
+  periph_isolated:
+    expr: periph_isolation && (in_stop_mode || in_standby_mode || in_shutdown_mode)
+  
+  # 电源序列状态
+  power_sequence_active:
+    expr: power_sequence
+  power_sequence_complete:
+    expr: power_sequence_done && !power_sequence_error
+  power_sequence_failed:
+    expr: power_sequence_error
+  
+  # 温度监控状态
+  temp_alarm_active:
+    expr: temp_alarm
+  temp_shutdown_active:
+    expr: temp_shutdown
+  thermal_fault:
+    expr: temp_alarm_active || temp_shutdown_active
+  
+  # 电源管理就绪状态
+  power_management_ready:
+    expr: all_power_ready && !power_fault && power_sequence_complete && !thermal_fault
+  system_power_ready:
+    expr: power_management_ready && all_power_on && cpu_clock_enabled && cpu_reset_released
+  low_power_exit_ready:
+    expr: wakeup_active && low_power_active && !power_fault
+
+  # 电源系统最终状态
+  power_system_final:
+    expr: power_management_ready & power_domain_ready & power_sequence_complete & !power_fault & !thermal_fault
+  power_domain_final:
+    expr: core_power_ready & analog_power_ready & peripheral_power_ready & backup_power_ready & all_power_on
+  low_power_final:
+    expr: low_power_exit_ready & !low_power_conflict & wakeup_configured
+
+# Power-related Parameters
+parameter:
+  # 系统参数验证
+  POWER_DOMAIN_COUNT: 5
+  LOW_POWER_MODES: 4
+
+# Power-related Validation Rules
+validation:
+  # 系统参数验证
+  system_parameter_rules:
+    - rule: power_domain_count
+      description: "电源域数量验证"
+      target: "instance.*pwr*.parameter.POWER_DOMAIN_COUNT"
+      condition: "value >= 1 && value <= 16"
+      severity: error
+      message: "电源域数量必须在1到16之间"
+      
+    - rule: low_power_modes_validation
+      description: "低功耗模式数量验证"
+      target: "instance.*pwr*.parameter.LOW_POWER_MODES"
+      condition: "value >= 2 && value <= 8"
+      severity: error
+      message: "低功耗模式数量必须在2到8之间"
+      
+    - rule: power_consumption_limit
+      description: "功耗限制检查"
+      target: "instance.*pwr*.parameter.POWER_CONSUMPTION"
+      condition: "value <= 5.0"
+      severity: warning
+      message: "功耗超过5W建议最大值"

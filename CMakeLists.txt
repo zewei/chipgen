@@ -289,6 +289,21 @@ else()
     message(STATUS "Use local systemrdl library: ${SYSTEMRDL_LIBRARIES} ${SYSTEMRDL_INCLUDE_DIRS}")
 endif()
 
+# REPLXX
+pkg_check_modules(REPLXX IMPORTED_TARGET replxx>=0.0.4)
+if (REPLXX_FOUND)
+    message(STATUS "Use system replxx library: ${REPLXX_LIBRARIES} ${REPLXX_VERSION}")
+else()
+    set(REPLXX_BUILD_EXAMPLES OFF CACHE BOOL "disable replxx examples")
+    set(REPLXX_BUILD_PACKAGE OFF CACHE BOOL "disable replxx package")
+    add_subdirectory(external/replxx)
+    set(REPLXX_INCLUDE_DIRS
+        "${CMAKE_CURRENT_SOURCE_DIR}/external/replxx/include"
+    )
+    set(REPLXX_LIBRARIES replxx::replxx)
+    message(STATUS "Use local replxx library: ${REPLXX_LIBRARIES} ${REPLXX_INCLUDE_DIRS}")
+endif()
+
 # FMT
 # Check if fmt target already exists (to avoid conflicts with FetchContent or other mechanisms)
 if(NOT TARGET fmt::fmt)
@@ -318,6 +333,7 @@ endif()
 file(GLOB_RECURSE PROJECT_CPP_FILES RELATIVE "${CMAKE_CURRENT_LIST_DIR}" "src/*.cpp")
 file(GLOB_RECURSE PROJECT_H_FILES   RELATIVE "${CMAKE_CURRENT_LIST_DIR}" "src/*.h")
 file(GLOB_RECURSE PROJECT_QRC_FILES RELATIVE "${CMAKE_CURRENT_LIST_DIR}" "resource/*.qrc")
+file(GLOB_RECURSE PROJECT_DOC_QRC_FILES RELATIVE "${CMAKE_CURRENT_LIST_DIR}" "doc/*.qrc")
 file(GLOB_RECURSE PROJECT_UI_FILES  RELATIVE "${CMAKE_CURRENT_LIST_DIR}" "ui/*.ui")
 file(GLOB_RECURSE PROJECT_TS_FILES  RELATIVE "${CMAKE_CURRENT_LIST_DIR}" "i18n/*.ts")
 file(GLOB_RECURSE APPONLY_TS_FILES  RELATIVE "${CMAKE_CURRENT_LIST_DIR}" "i18n/app_*.ts")
@@ -328,6 +344,7 @@ set(PROJECT_SOURCES
     "${PROJECT_UI_FILES}"
     "${PROJECT_TS_FILES}"
     "${PROJECT_QRC_FILES}"
+    "${PROJECT_DOC_QRC_FILES}"
 )
 
 set(CMAKE_AUTOUIC_SEARCH_PATHS
@@ -337,7 +354,7 @@ set(CMAKE_AUTOUIC_SEARCH_PATHS
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_resources(PROJECT_SOURCES "${PROJECT_QRC_FILES}")
+    qt_add_resources(PROJECT_SOURCES "${PROJECT_QRC_FILES}" "${PROJECT_DOC_QRC_FILES}")
     qt_add_executable(${PROJECT_NAME}
         MANUAL_FINALIZATION
         "${PROJECT_SOURCES}"
@@ -346,7 +363,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_lrelease(${PROJECT_NAME} TS_FILES "${PROJECT_TS_FILES}" QM_FILES_OUTPUT_VARIABLE QM_FILES)
     qt_add_resources(${PROJECT_NAME} "translations" PREFIX "/i18n" BASE "${CMAKE_CURRENT_BINARY_DIR}" FILES "${QM_FILES}")
 else()
-    qt5_add_resources(PROJECT_SOURCES "${PROJECT_QRC_FILES}")
+    qt5_add_resources(PROJECT_SOURCES "${PROJECT_QRC_FILES}" "${PROJECT_DOC_QRC_FILES}")
     if(ANDROID)
         add_library(${PROJECT_NAME} SHARED
             "${PROJECT_SOURCES}"
@@ -381,6 +398,7 @@ target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE
     "${ANTLR4_INCLUDE_DIRS}"
     "${SYSTEMRDL_INCLUDE_DIRS}"
     "${FMT_INCLUDE_DIRS}"
+    "${REPLXX_INCLUDE_DIRS}"
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -404,6 +422,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     ${ANTLR4_LIBRARIES}
     ${SYSTEMRDL_LIBRARIES}
     ${FMT_LIBRARIES}
+    ${REPLXX_LIBRARIES}
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES

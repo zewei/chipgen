@@ -17,6 +17,9 @@
 #include <QObject>
 #include <QStringList>
 
+class QSocAgent;
+class QAgentReadline;
+
 /**
  * @brief The QSocCliWorker class.
  * @details This class is the main worker class for the qsoc application.
@@ -359,6 +362,48 @@ private:
      * @retval false Parse failed.
      */
     bool parseGenerateStub(const QStringList &appArguments);
+
+    /**
+     * @brief Parse the agent command line arguments.
+     * @details This function will parse the agent command line arguments
+     *          to run the AI agent mode for interactive SoC design.
+     * @param appArguments command line arguments.
+     * @retval true Parse successfully.
+     * @retval false Parse failed.
+     */
+    bool parseAgent(const QStringList &appArguments);
+
+    /**
+     * @brief Run the agent interactive loop.
+     * @details This function runs the interactive REPL loop for the agent.
+     *          Uses enhanced readline if terminal supports it.
+     * @param agent The agent to run.
+     * @param streaming Whether to use streaming mode.
+     * @retval true Run successfully.
+     * @retval false Run failed.
+     */
+    bool runAgentLoop(QSocAgent *agent, bool streaming = false);
+
+    /**
+     * @brief Run the agent loop in simple mode (for pipes/non-TTY).
+     * @details This function runs a simple input loop without readline.
+     * @param agent The agent to run.
+     * @param streaming Whether to use streaming mode.
+     * @retval true Run successfully.
+     * @retval false Run failed.
+     */
+    bool runAgentLoopSimple(QSocAgent *agent, bool streaming = false);
+
+    /**
+     * @brief Run the agent loop in enhanced mode (with readline).
+     * @details This function runs with full readline support.
+     * @param agent The agent to run.
+     * @param readline The readline instance.
+     * @param streaming Whether to use streaming mode.
+     * @retval true Run successfully.
+     * @retval false Run failed.
+     */
+    bool runAgentLoopEnhanced(QSocAgent *agent, QAgentReadline *readline, bool streaming = false);
 
     /**
      * @brief Show application name and version and emit exit with exitCode.

@@ -7,6 +7,7 @@
 #include "agent/tool/qsoctoolfile.h"
 #include "agent/tool/qsoctoolgenerate.h"
 #include "agent/tool/qsoctoolmodule.h"
+#include "agent/tool/qsoctoolpath.h"
 #include "agent/tool/qsoctoolproject.h"
 #include "agent/tool/qsoctoolshell.h"
 #include "common/qsocbusmanager.h"
@@ -17,6 +18,7 @@
 
 #include <QDir>
 #include <QFile>
+#include <QRegularExpression>
 #include <QTemporaryDir>
 #include <QtCore>
 #include <QtTest>
@@ -43,6 +45,7 @@ private:
     QSocModuleManager   *moduleManager   = nullptr;
     QSocBusManager      *busManager      = nullptr;
     QSocGenerateManager *generateManager = nullptr;
+    QSocPathContext     *pathContext     = nullptr;
 
 private slots:
     void initTestCase()
@@ -56,10 +59,12 @@ private slots:
         generateManager = new QSocGenerateManager(this, projectManager);
 
         projectManager->setProjectPath(tempDir.path());
+        pathContext = new QSocPathContext(this, projectManager);
     }
 
     void cleanupTestCase()
     {
+        delete pathContext;
         delete generateManager;
         delete busManager;
         delete moduleManager;
@@ -159,7 +164,7 @@ private slots:
     /* File Tools Tests */
     void testFileReadMissingPath()
     {
-        QSocToolFileRead tool(this, projectManager);
+        QSocToolFileRead tool(this, pathContext);
         json             args = json::object();
 
         QString result = tool.execute(args);
@@ -170,7 +175,7 @@ private slots:
 
     void testFileReadNonexistent()
     {
-        QSocToolFileRead tool(this, projectManager);
+        QSocToolFileRead tool(this, pathContext);
         json             args = {{"file_path", "/nonexistent/path/file.txt"}};
 
         QString result = tool.execute(args);
@@ -180,17 +185,31 @@ private slots:
 
     void testFileReadSecurityCheck()
     {
-        QSocToolFileRead tool(this, projectManager);
+        /* Read should be unrestricted - /etc/passwd should be readable */
+        QSocToolFileRead tool(this, pathContext);
         json             args = {{"file_path", "/etc/passwd"}};
 
         QString result = tool.execute(args);
 
-        QVERIFY(result.contains("Access denied") || result.contains("Error:"));
+        /* Should succeed (contain file content like root:) or fail with permission error,
+         * but NOT "Access denied" */
+        QVERIFY(!result.contains("Access denied"));
+    }
+
+    void testFileWriteSecurityCheck()
+    {
+        /* Write outside allowed directories should be denied */
+        QSocToolFileWrite tool(this, pathContext);
+        json              args = {{"file_path", "/etc/test_write_deny.txt"}, {"content", "test"}};
+
+        QString result = tool.execute(args);
+
+        QVERIFY(result.contains("Access denied"));
     }
 
     void testFileListDirectory()
     {
-        QSocToolFileList tool(this, projectManager);
+        QSocToolFileList tool(this, pathContext);
         json             args = {{"directory", tempDir.path().toStdString()}};
 
         QString result = tool.execute(args);
@@ -202,7 +221,7 @@ private slots:
     void testFileWriteAndRead()
     {
         /* Write a file */
-        QSocToolFileWrite writeTool(this, projectManager);
+        QSocToolFileWrite writeTool(this, pathContext);
         QString           testContent = "Hello, QSoC Agent Test!";
         QString           testFile    = tempDir.path() + "/test_write.txt";
 
@@ -213,7 +232,7 @@ private slots:
         QVERIFY(writeResult.contains("Successfully"));
 
         /* Read it back */
-        QSocToolFileRead readTool(this, projectManager);
+        QSocToolFileRead readTool(this, pathContext);
         json             readArgs = {{"file_path", testFile.toStdString()}};
 
         QString readResult = readTool.execute(readArgs);
@@ -230,7 +249,7 @@ private slots:
         file.close();
 
         /* Edit it */
-        QSocToolFileEdit editTool(this, projectManager);
+        QSocToolFileEdit editTool(this, pathContext);
         json             editArgs
             = {{"file_path", testFile.toStdString()},
                {"old_string", "World"},
@@ -256,7 +275,7 @@ private slots:
         file.close();
 
         /* Try to edit without replace_all */
-        QSocToolFileEdit editTool(this, projectManager);
+        QSocToolFileEdit editTool(this, pathContext);
         json             editArgs
             = {{"file_path", testFile.toStdString()}, {"old_string", "foo"}, {"new_string", "xxx"}};
 
@@ -401,6 +420,122 @@ private slots:
         QString result = tool.execute(args);
 
         QVERIFY(result.startsWith("Error:"));
+    }
+
+    /* Bash Timeout Tests */
+    void testBashTimeout()
+    {
+        QSocToolShellBash tool(this, projectManager);
+        json              args = {{"command", "sleep 10"}, {"timeout", 1000}};
+
+        QString result = tool.execute(args);
+
+        QVERIFY(result.contains("timed out"));
+        QVERIFY(result.contains("Process ID:"));
+        QVERIFY(result.contains("STILL RUNNING"));
+        QVERIFY(result.contains("bash_manage"));
+    }
+
+    void testBashManageStatus()
+    {
+        QSocToolShellBash tool(this, projectManager);
+        json              bashArgs = {{"command", "sleep 10"}, {"timeout", 1000}};
+
+        QString bashResult = tool.execute(bashArgs);
+        QVERIFY(bashResult.contains("Process ID:"));
+
+        /* Extract process ID */
+        QRegularExpression      regex("Process ID: (\\d+)");
+        QRegularExpressionMatch match = regex.match(bashResult);
+        QVERIFY(match.hasMatch());
+        int processId = match.captured(1).toInt();
+
+        /* Check status */
+        QSocToolBashManage manageTool(this);
+        json               statusArgs = {{"process_id", processId}, {"action", "status"}};
+
+        QString statusResult = manageTool.execute(statusArgs);
+        QVERIFY(statusResult.contains("RUNNING") || statusResult.contains("FINISHED"));
+        QVERIFY(statusResult.contains("sleep 10"));
+
+        /* Kill it */
+        json    killArgs   = {{"process_id", processId}, {"action", "kill"}};
+        QString killResult = manageTool.execute(killArgs);
+        QVERIFY(killResult.contains("killed") || killResult.contains("exit code"));
+    }
+
+    void testBashManageKill()
+    {
+        QSocToolShellBash tool(this, projectManager);
+        json              bashArgs = {{"command", "sleep 30"}, {"timeout", 500}};
+
+        QString bashResult = tool.execute(bashArgs);
+        QVERIFY(bashResult.contains("Process ID:"));
+
+        QRegularExpression      regex("Process ID: (\\d+)");
+        QRegularExpressionMatch match = regex.match(bashResult);
+        QVERIFY(match.hasMatch());
+        int processId = match.captured(1).toInt();
+
+        /* Kill the process */
+        QSocToolBashManage manageTool(this);
+        json               killArgs = {{"process_id", processId}, {"action", "kill"}};
+
+        QString killResult = manageTool.execute(killArgs);
+        QVERIFY(killResult.contains("killed"));
+
+        /* Verify it's cleaned up */
+        json    statusArgs   = {{"process_id", processId}, {"action", "status"}};
+        QString statusResult = manageTool.execute(statusArgs);
+        QVERIFY(statusResult.contains("Error:"));
+        QVERIFY(statusResult.contains("No active process"));
+    }
+
+    void testBashManageWait()
+    {
+        QSocToolShellBash tool(this, projectManager);
+        /* Short command that finishes quickly, but with short timeout */
+        json bashArgs = {{"command", "echo done && sleep 1"}, {"timeout", 200}};
+
+        QString bashResult = tool.execute(bashArgs);
+        QVERIFY(bashResult.contains("Process ID:"));
+
+        QRegularExpression      regex("Process ID: (\\d+)");
+        QRegularExpressionMatch match = regex.match(bashResult);
+        QVERIFY(match.hasMatch());
+        int processId = match.captured(1).toInt();
+
+        /* Wait for it to finish */
+        QSocToolBashManage manageTool(this);
+        json waitArgs = {{"process_id", processId}, {"action", "wait"}, {"timeout", 5000}};
+
+        QString waitResult = manageTool.execute(waitArgs);
+        QVERIFY(
+            waitResult.contains("completed") || waitResult.contains("finished")
+            || waitResult.contains("done"));
+    }
+
+    void testBashManageInvalidProcess()
+    {
+        QSocToolBashManage manageTool(this);
+        json               args = {{"process_id", 99999}, {"action", "status"}};
+
+        QString result = manageTool.execute(args);
+        QVERIFY(result.contains("Error:"));
+        QVERIFY(result.contains("No active process"));
+    }
+
+    void testBashManageMissingParams()
+    {
+        QSocToolBashManage manageTool(this);
+
+        /* Missing process_id */
+        json args1 = {{"action", "status"}};
+        QVERIFY(manageTool.execute(args1).contains("Error:"));
+
+        /* Missing action */
+        json args2 = {{"process_id", 1}};
+        QVERIFY(manageTool.execute(args2).contains("Error:"));
     }
 
     /* Registry Execute Tool */

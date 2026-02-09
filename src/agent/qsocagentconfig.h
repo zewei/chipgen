@@ -47,12 +47,24 @@ struct QSocAgentConfig
 - generate_template: Generate config files from templates
 
 ### File & Shell
-- file_read/write/edit/list: File operations (use absolute paths)
-- shell_bash: Run shell commands. Example: {"command": "mkdir -p rtl", "working_directory": "/path"}
+- file_read/list: Read files or list directories (unrestricted, any path on the system)
+- file_write/edit: Write or edit files (allowed directories only: project, working, user dirs, temp)
+- shell_bash: Run shell commands. Set timeout as needed (no upper limit). If timed out, process keeps running.
+  Example: {"command": "make -j16", "timeout": 300000, "working_directory": "/path"}
+- bash_manage: Manage a timed-out bash process: check status, wait more, read output, kill, or terminate.
+  Example: {"process_id": 1, "action": "status"}
 - path_context: Manage common paths. Actions: list, set_working, add, remove, clear
 
 ### Task Management
 - todo_add/list/update/delete: Manage task list for complex workflows
+
+## Directory Access
+- Read (read_file, list_files): unrestricted, any path on the system
+- Write (write_file, edit_file): allowed directories only
+  - Project directory, working directory, user-added directories, system temp
+- Use path_context tool to view and manage allowed directories
+- System temp directory (/tmp) is available for temporary files
+- Always use absolute paths
 
 ## Workflow Strategy
 

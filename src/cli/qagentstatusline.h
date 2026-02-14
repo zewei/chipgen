@@ -107,6 +107,9 @@ private:
     qint64 inputTokens  = 0;
     qint64 outputTokens = 0;
 
+    /* Thinking level for display */
+    QString thinkingLevel;
+
     /* Pure ASCII spinner frames for maximum terminal compatibility */
     const QStringList spinnerFrames = {"-", "\\", "|", "/"};
 
@@ -153,6 +156,16 @@ private:
      * @brief Buffered content waiting to be flushed by render()
      */
     QString pendingContent;
+
+    /**
+     * @brief Current input line text for display below status bar
+     */
+    QString inputLineText;
+
+    /**
+     * @brief Queued requests for persistent display above status bar
+     */
+    QStringList queuedRequests;
 
     /**
      * @brief The current incomplete line of streaming content (ephemeral zone)
@@ -209,6 +222,40 @@ public:
      * @param output Output (completion) tokens
      */
     void updateTokens(qint64 input, qint64 output);
+
+    /**
+     * @brief Set thinking level for status bar display
+     * @param level Thinking level (empty=hidden, "low"/"medium"/"high")
+     */
+    void setThinkingLevel(const QString &level);
+
+    /**
+     * @brief Set the input line text for display below status bar
+     * @param text Current user input text (empty to hide)
+     */
+    void setInputLine(const QString &text);
+
+    /**
+     * @brief Clear the input line display
+     */
+    void clearInputLine();
+
+    /**
+     * @brief Add a queued request to the persistent display
+     * @param text The queued request text
+     */
+    void addQueuedRequest(const QString &text);
+
+    /**
+     * @brief Remove a queued request from the persistent display
+     * @param text The request text to remove (first occurrence)
+     */
+    void removeQueuedRequest(const QString &text);
+
+    /**
+     * @brief Clear all queued requests from the display
+     */
+    void clearQueuedRequests();
 
 private:
     /**

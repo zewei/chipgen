@@ -107,6 +107,27 @@ public:
     bool isRunning() const;
 
     /**
+     * @brief Manually trigger context compaction
+     * @return Number of tokens saved (0 if nothing compacted)
+     */
+    int compact();
+
+    /**
+     * @brief Find safe message boundary that doesn't split tool_calls/tool pairs
+     * @param proposedIndex Desired boundary index
+     * @return Adjusted index that keeps tool_calls groups intact
+     */
+    int findSafeBoundary(int proposedIndex) const;
+
+    /**
+     * @brief Format messages for summary prompt
+     * @param start Start index (inclusive)
+     * @param end End index (exclusive)
+     * @return Formatted text for LLM summarization
+     */
+    QString formatMessagesForSummary(int start, int end) const;
+
+    /**
      * @brief Set the LLM service
      * @param llmService Pointer to the LLM service
      */
@@ -117,6 +138,18 @@ public:
      * @param toolRegistry Pointer to the tool registry
      */
     void setToolRegistry(QSocToolRegistry *toolRegistry);
+
+    /**
+     * @brief Set the thinking/reasoning level
+     * @param level Thinking level: empty/off, "low", "medium", "high"
+     */
+    void setThinkingLevel(const QString &level);
+
+    /**
+     * @brief Set the reasoning model
+     * @param model Model name to use when thinking is enabled (empty=use primary)
+     */
+    void setReasoningModel(const QString &model);
 
     /**
      * @brief Set the agent configuration
@@ -223,6 +256,20 @@ signals:
      */
     void tokenUsage(qint64 inputTokens, qint64 outputTokens);
 
+    /**
+     * @brief Signal emitted when context compaction occurs
+     * @param layer Compaction layer (1=prune, 2=LLM compact)
+     * @param beforeTokens Token count before compaction
+     * @param afterTokens Token count after compaction
+     */
+    void compacting(int layer, int beforeTokens, int afterTokens);
+
+    /**
+     * @brief Signal emitted for each reasoning chunk during streaming
+     * @param chunk The reasoning content chunk
+     */
+    void reasoningChunk(const QString &chunk);
+
 private:
     QLLMService      *llmService   = nullptr;
     QSocToolRegistry *toolRegistry = nullptr;
@@ -252,6 +299,20 @@ private:
 
     /* Retry tracking */
     int currentRetryCount = 0;
+
+    /**
+     * @brief Layer 1: Prune old tool outputs to reduce token usage
+     * @param force Skip threshold check (for manual compact)
+     * @return true if pruning saved enough tokens
+     */
+    bool pruneToolOutputs(bool force = false);
+
+    /**
+     * @brief Layer 2: Use LLM to generate a structured summary of old messages
+     * @param force Skip threshold check (for manual compact)
+     * @return true if compaction succeeded
+     */
+    bool compactWithLLM(bool force = false);
 
     /**
      * @brief Process a single iteration of the agent loop
@@ -307,6 +368,12 @@ private:
      * @param error Error message
      */
     void handleStreamError(const QString &error);
+
+    /**
+     * @brief Handle reasoning chunk from LLM
+     * @param chunk Reasoning content chunk
+     */
+    void handleReasoningChunk(const QString &chunk);
 
     /**
      * @brief Estimate the number of tokens in a text

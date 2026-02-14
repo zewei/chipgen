@@ -461,8 +461,25 @@ LLMResponse QLLMService::sendRequestToEndpoint(
     return response;
 }
 
+void QLLMService::abortStream()
+{
+    if (!currentStreamReply || streamCompleted) {
+        return;
+    }
+    streamCompleted = true;
+    disconnect(currentStreamReply, nullptr, this, nullptr);
+    currentStreamReply->abort();
+    currentStreamReply->deleteLater();
+    currentStreamReply = nullptr;
+    emit streamError("Aborted by user");
+}
+
 void QLLMService::sendChatCompletionStream(
-    const json &messages, const json &tools, double temperature)
+    const json    &messages,
+    const json    &tools,
+    double         temperature,
+    const QString &reasoningEffort,
+    const QString &modelOverride)
 {
     if (!hasEndpoint()) {
         emit streamError("No LLM endpoint configured");
@@ -487,7 +504,18 @@ void QLLMService::sendChatCompletionStream(
     payload["temperature"] = temperature;
     payload["stream"]      = true;
 
-    if (!endpoint.model.isEmpty()) {
+    if (!reasoningEffort.isEmpty()) {
+        /* Direct OpenAI/DeepSeek format */
+        payload["reasoning_effort"] = reasoningEffort.toStdString();
+        /* OpenRouter unified format */
+        payload["reasoning"] = {{"effort", reasoningEffort.toStdString()}};
+        /* Remove temperature - reasoning models reject it */
+        payload.erase("temperature");
+    }
+
+    if (!modelOverride.isEmpty()) {
+        payload["model"] = modelOverride.toStdString();
+    } else if (!endpoint.model.isEmpty()) {
         payload["model"] = endpoint.model.toStdString();
     }
 
@@ -499,6 +527,7 @@ void QLLMService::sendChatCompletionStream(
     streamBuffer.clear();
     streamAccumulatedContent.clear();
     streamAccumulatedToolCalls.clear();
+    streamAccumulatedReasoning.clear();
     streamCompleted = false;
 
     currentStreamReply = networkManager->post(request, QByteArray::fromStdString(payload.dump()));
@@ -658,6 +687,25 @@ bool QLLMService::parseStreamLine(
             emit streamChunk(content);
         }
 
+        /* Direct API format: delta.reasoning_content (DeepSeek R1) */
+        if (delta.contains("reasoning_content") && delta["reasoning_content"].is_string()) {
+            QString reasoning = QString::fromStdString(
+                delta["reasoning_content"].get<std::string>());
+            streamAccumulatedReasoning += reasoning;
+            emit streamReasoningChunk(reasoning);
+        }
+
+        /* OpenRouter format: delta.reasoning_details (array) */
+        if (delta.contains("reasoning_details") && delta["reasoning_details"].is_array()) {
+            for (const auto &detail : delta["reasoning_details"]) {
+                if (detail.contains("text") && detail["text"].is_string()) {
+                    QString reasoning = QString::fromStdString(detail["text"].get<std::string>());
+                    streamAccumulatedReasoning += reasoning;
+                    emit streamReasoningChunk(reasoning);
+                }
+            }
+        }
+
         /* Handle tool calls */
         if (delta.contains("tool_calls")) {
             for (const auto &toolCall : delta["tool_calls"]) {
@@ -726,6 +774,12 @@ json QLLMService::buildStreamResponse(const QString &content, const QMap<int, js
     } else {
         /* Must be null, not missing. DeepSeek requires content field in assistant messages. */
         message["content"] = nullptr;
+    }
+
+    /* DeepSeek R1 requires reasoning_content in assistant messages.
+     * Without this, subsequent API calls fail with "Missing reasoning_content field". */
+    if (!streamAccumulatedReasoning.isEmpty()) {
+        message["reasoning_content"] = streamAccumulatedReasoning.toStdString();
     }
 
     if (!toolCalls.isEmpty()) {

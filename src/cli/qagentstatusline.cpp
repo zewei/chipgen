@@ -282,6 +282,26 @@ void QAgentStatusLine::stop()
     inputLineText.clear();
 }
 
+void QAgentStatusLine::pause()
+{
+    if (!active) {
+        return;
+    }
+
+    spinnerTimer->stop();
+    clearLine();
+}
+
+void QAgentStatusLine::resume()
+{
+    if (!active) {
+        return;
+    }
+
+    render();
+    spinnerTimer->start(100);
+}
+
 bool QAgentStatusLine::isActive() const
 {
     return active;
@@ -400,8 +420,8 @@ void QAgentStatusLine::render()
         out << "\033[?7h"; /* Re-enable auto-wrap */
     }
 
-    /* Separator between partial content and TODO items */
-    if (!currentPartialLine.isEmpty() && todoLineCount > 0) {
+    /* Separator: newline after partial content so status line is on its own line */
+    if (!currentPartialLine.isEmpty()) {
         out << "\n";
     }
 
@@ -438,7 +458,7 @@ void QAgentStatusLine::render()
     }
 
     /* Update displayed line count: truncation + DECAWM guarantees no wrapping */
-    int hasSeparator       = (!currentPartialLine.isEmpty() && todoLineCount > 0) ? 1 : 0;
+    int hasSeparator       = !currentPartialLine.isEmpty() ? 1 : 0;
     int hasInputLine       = !inputLineText.isEmpty() ? 1 : 0;
     displayedTodoLineCount = hasSeparator + todoLineCount + queueLineCount + hasInputLine;
 
@@ -447,8 +467,13 @@ void QAgentStatusLine::render()
 
     /* Output input line below status bar if user is typing */
     if (!inputLineText.isEmpty()) {
-        QString inputDisplay = "> " + inputLineText;
-        inputDisplay         = truncateToVisualWidth(inputDisplay, termWidth - 1);
+        QString inputDisplay;
+        if (inputLineText.startsWith("!")) {
+            inputDisplay = "\033[33m! \033[0m" + inputLineText.mid(1);
+        } else {
+            inputDisplay = "> " + inputLineText;
+        }
+        inputDisplay = truncateToVisualWidth(inputDisplay, termWidth - 1);
         out << "\n" << inputDisplay;
     }
 
